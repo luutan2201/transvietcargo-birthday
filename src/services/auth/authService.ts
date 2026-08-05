@@ -26,13 +26,14 @@ export const authService = {
     }
     if (!data.user) throw new ValidationError('Invalid email or password');
 
-    const profile = await authService.getProfile(data.user.id);
-    if (!profile) {
+    try {
+      const profile = await authService.getProfileOrThrow(data.user.id);
+      logger.info('User logged in', { email });
+      return profile;
+    } catch (err) {
       await supabase.auth.signOut();
-      throw new ValidationError('Your account has no profile set up — contact an admin.');
+      throw err;
     }
-    logger.info('User logged in', { email });
-    return profile;
   },
 
   async logout(): Promise<void> {
@@ -41,7 +42,21 @@ export const authService = {
 
   async getProfile(userId: string): Promise<Profile | null> {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
-    if (error || !data) return null;
+    if (error) {
+      logger.error('Failed to fetch profile (likely an RLS/permissions issue)', error);
+      return null;
+    }
+    if (!data) return null;
+    return profileFromRow(data as ProfileRow);
+  },
+
+  /** Same as getProfile but throws with the real Supabase error message
+   * instead of swallowing it — used right after login so failures are
+   * diagnosable instead of showing a generic "no profile" message. */
+  async getProfileOrThrow(userId: string): Promise<Profile> {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    if (error) throw new ValidationError(`Profile lookup failed: ${error.message}`);
+    if (!data) throw new ValidationError('Your account has no profile set up — contact an admin.');
     return profileFromRow(data as ProfileRow);
   },
 
