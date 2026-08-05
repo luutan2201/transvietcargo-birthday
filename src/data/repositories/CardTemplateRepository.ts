@@ -33,9 +33,13 @@ export class CardTemplateRepository {
 
   /** Uploads the background PNG to Supabase Storage and returns its path. */
   async uploadImage(file: File): Promise<string> {
-    const path = `${crypto.randomUUID()}-${file.name}`;
-    const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
-    if (error) throw new RepositoryError('Failed to upload card template image', error);
+    // Use a fully sanitized name (not the original filename) — storage
+    // object keys can reject spaces, diacritics, and special characters
+    // like parentheses, which are common in real-world uploaded filenames.
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type || 'image/png' });
+    if (error) throw new RepositoryError(`Failed to upload card template image: ${error.message}`, error);
     return path;
   }
 
