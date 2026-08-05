@@ -1,0 +1,97 @@
+:root {
+  --color-primary: #147E93;
+  --color-primary-dark: #0C5764;
+  --color-primary-light: #E3F3F6;
+  --color-secondary: #1CA3BC;
+  --color-accent: #FCCB8A;
+  --color-success: #4CAF50;
+  --color-warning: #FFC107;
+  --color-danger: #F44336;
+  --color-bg: #EAF6F8;
+  --color-glass: rgba(255, 255, 255, 0.6);
+  --color-glass-strong: rgba(255, 255, 255, 0.75);
+  --font-app: 'Segoe UI', 'San Francisco', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --shadow-soft: 0 10px 32px rgba(20, 126, 147, 0.12);
+  --shadow-strong: 0 14px 40px rgba(20, 126, 147, 0.18);
+  --blur-glass: blur(20px);
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --text-main: #16262C;
+  --text-secondary: #55696F;
+  --text-muted: #8CA0A6;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+body {
+  margin: 0;
+  min-width: 1366px;
+  font-family: var(--font-app);
+  background: linear-gradient(160deg, #EAF6F8 0%, #DCEEF1 45%, #F4ECE0 100%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 20px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 700; }
+p { font-size: 15px; color: var(--text-secondary); }
+label { font-size: 14px; color: var(--text-main); }
+
+/* Larger, more legible defaults for common form controls used across the
+   app. Match by exclusion (not `input[type="text"]`) since plain <input>
+   elements without an explicit type attribute wouldn't match an
+   attribute selector even though they render as text inputs. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+select, textarea {
+  font-family: var(--font-app);
+  font-size: 15px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(20, 126, 147, 0.18);
+  background: rgba(255, 255, 255, 0.7);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
+select:focus, textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(20, 126, 147, 0.14);
+}
+input[type="color"] {
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(20, 126, 147, 0.18);
+  cursor: pointer;
+}
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+button {
+  font-family: var(--font-app);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+table { font-size: 14px; }
+th { font-size: 13px; }
+
+.glass-panel {
+  background: var(--color-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
