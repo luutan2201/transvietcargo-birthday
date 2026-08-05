@@ -20,7 +20,11 @@ function profileFromRow(r: ProfileRow): Profile {
 export const authService = {
   async login(email: string, password: string): Promise<Profile> {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) throw new ValidationError('Invalid email or password');
+    if (error) {
+      logger.error('Supabase login error', error);
+      throw new ValidationError(error.message || 'Invalid email or password');
+    }
+    if (!data.user) throw new ValidationError('Invalid email or password');
 
     const profile = await authService.getProfile(data.user.id);
     if (!profile) {
