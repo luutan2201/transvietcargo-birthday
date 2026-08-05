@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Customer } from '../../types/entities';
+import type { Customer, Station } from '../../types/entities';
 import { customerService } from '../../services/customer/customerService';
 
 const MONTH_NAMES = [
@@ -11,11 +11,14 @@ const WEEKDAY_LABELS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', '
 const ECARD_COLOR = '#4CAF50';
 const GIFT_COLOR = '#2563EB';
 
+type StationFilter = 'ALL' | Station;
+
 export default function CalendarPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-12
   const [year, setYear] = useState(now.getFullYear());
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [stationFilter, setStationFilter] = useState<StationFilter>('ALL');
 
   useEffect(() => {
     // Loaded once — the calendar is purely derived from customers already
@@ -27,13 +30,14 @@ export default function CalendarPage() {
     const map = new Map<number, Customer[]>();
     for (const c of customers) {
       if (!c.birthDate) continue;
+      if (stationFilter !== 'ALL' && c.station !== stationFilter) continue;
       const [, m, d] = c.birthDate.split('-').map(Number);
       if (m !== month) continue;
       if (!map.has(d)) map.set(d, []);
       map.get(d)!.push(c);
     }
     return map;
-  }, [customers, month]);
+  }, [customers, month, stationFilter]);
 
   const weeks = useMemo(() => buildMonthGrid(year, month), [year, month]);
 
@@ -64,9 +68,17 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 15, fontWeight: 600, marginBottom: 14 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Dot color={ECARD_COLOR} size={12} /> eCard only</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Dot color={GIFT_COLOR} size={12} /> Gift visit</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 15, fontWeight: 600 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Dot color={ECARD_COLOR} size={12} /> eCard only</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Dot color={GIFT_COLOR} size={12} /> Gift visit</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginRight: 4 }}>Station:</span>
+          <StationButton active={stationFilter === 'ALL'} onClick={() => setStationFilter('ALL')}>Tất cả</StationButton>
+          <StationButton active={stationFilter === 'SGN'} onClick={() => setStationFilter('SGN')}>SGN</StationButton>
+          <StationButton active={stationFilter === 'HAN'} onClick={() => setStationFilter('HAN')}>HAN</StationButton>
+        </div>
       </div>
 
       <div className="glass-panel" style={{ padding: 16, overflowX: 'auto' }}>
@@ -88,9 +100,12 @@ export default function CalendarPage() {
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>{day}</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 76, overflowY: 'auto' }}>
                           {(byDay.get(day) ?? []).map((c) => (
-                            <div key={c.id} title={`${c.fullName} — ${c.company ?? ''}`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, background: '#fff', borderRadius: 8, padding: '3px 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div key={c.id} title={`${c.fullName} — ${c.company ?? ''} (${c.station})`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, background: '#fff', borderRadius: 8, padding: '3px 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               <Dot color={c.greetingType === 'gift_visit' ? GIFT_COLOR : ECARD_COLOR} />
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.fullName}{c.company ? ` | ${c.company}` : ''}</span>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {c.fullName}{c.company ? ` | ${c.company}` : ''}
+                                {stationFilter === 'ALL' && <span style={{ color: 'var(--text-muted)' }}> · {c.station}</span>}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -109,6 +124,21 @@ export default function CalendarPage() {
 
 function Dot({ color, size = 8 }: { color: string; size?: number }) {
   return <span style={{ width: size, height: size, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />;
+}
+
+function StationButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '6px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+        background: active ? 'var(--color-primary)' : '#fff', color: active ? '#fff' : 'var(--text-main)',
+        boxShadow: active ? 'none' : '0 0 0 1px rgba(20,126,147,0.2)',
+      }}
+    >
+      {children}
+    </button>
+  );
 }
 
 function isToday(year: number, month: number, day: number): boolean {
