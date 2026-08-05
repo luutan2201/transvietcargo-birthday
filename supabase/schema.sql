@@ -164,12 +164,26 @@ end $$;
 drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles for select using (auth.role() = 'authenticated');
 
+-- Admin-write check goes through a SECURITY DEFINER function rather than
+-- a direct subquery on profiles — a policy that queries its own table
+-- directly re-triggers RLS evaluation on itself and causes Postgres to
+-- report "infinite recursion detected in policy for relation profiles".
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
+
 drop policy if exists "profiles_admin_write" on public.profiles;
-create policy "profiles_admin_write" on public.profiles for all using (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-) with check (
-  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-);
+create policy "profiles_admin_write" on public.profiles for all
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- =====================================================================
 -- Storage bucket for card template backgrounds (public-read is fine —
