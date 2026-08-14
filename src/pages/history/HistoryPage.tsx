@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import type { HistoryRecord } from '../../types/entities';
 import { historyService } from '../../services/history/historyService';
+import { useAuth } from '../../hooks/useAuth';
+import { hasPermission } from '../../services/auth/permissions';
 
 export default function HistoryPage() {
+  const { session } = useAuth();
+  const canDelete = !!session && hasPermission(session.role, 'history.delete');
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [showCleanupHint, setShowCleanupHint] = useState(false);
 
   const reload = async () => {
     setRecords(await historyService.listAll());
-    setShowCleanupHint(await historyService.suggestsCleanup());
+    setShowCleanupHint(canDelete && (await historyService.suggestsCleanup()));
   };
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(); }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCleanup() {
     const cutoff = new Date();

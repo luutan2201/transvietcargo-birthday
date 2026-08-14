@@ -1,11 +1,12 @@
 // supabase/functions/create-user/index.ts
 // Deploy with: supabase functions deploy create-user
+// (or paste this file's content into the function's Code tab in the
+// Supabase dashboard and re-deploy, if you don't have the CLI working.)
 //
-// Creates a login (email + password) for a new team member. Only callable
-// by an already-logged-in admin — the function itself checks the caller's
-// role via their JWT before doing anything, and uses the SERVICE ROLE KEY
-// (set as a Supabase secret, never shipped to the browser) to actually
-// create the Auth user, which is otherwise not possible from client code.
+// Handles account management actions that require the SERVICE ROLE KEY
+// (never exposed to the browser): creating a login, resetting someone's
+// password, and deleting an account. Every action first verifies the
+// CALLER is an admin via their own JWT before touching anything.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -35,34 +36,60 @@ Deno.serve(async (req) => {
       .select('role')
       .eq('id', userData.user.id)
       .single();
-    if (callerProfile?.role !== 'admin') return json({ error: 'Only admins can create users' }, 403, corsHeaders);
+    if (callerProfile?.role !== 'admin') return json({ error: 'Only admins can manage accounts' }, 403, corsHeaders);
 
-    const { email, password, displayName, role } = await req.json();
-    if (!email || !password || !displayName || !role) return json({ error: 'Missing required fields' }, 400, corsHeaders);
-    if (!['admin', 'manager', 'user'].includes(role)) return json({ error: 'Invalid role' }, 400, corsHeaders);
-    if (String(password).length < 8) return json({ error: 'Password must be at least 8 characters' }, 400, corsHeaders);
-
-    // Admin client — full privileges, only used after the role check above.
+    const body = await req.json();
+    const action = body.action ?? 'create'; // default keeps old callers working
     const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const { data: created, error: createError } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-    if (createError || !created.user) return json({ error: createError?.message ?? 'Failed to create user' }, 400, corsHeaders);
 
-    const { error: profileError } = await adminClient.from('profiles').insert({
-      id: created.user.id,
-      email,
-      display_name: displayName,
-      role,
-    });
-    if (profileError) {
-      await adminClient.auth.admin.deleteUser(created.user.id); // roll back the orphaned auth user
-      return json({ error: profileError.message }, 400, corsHeaders);
+    if (action === 'create') {
+      const { email, password, displayName, role } = body;
+      if (!email || !password || !displayName || !role) return json({ error: 'Missing required fields' }, 400, corsHeaders);
+      if (!['admin', 'manager', 'user'].includes(role)) return json({ error: 'Invalid role' }, 400, corsHeaders);
+      if (String(password).length < 8) return json({ error: 'Password must be at least 8 characters' }, 400, corsHeaders);
+
+      const { data: created, error: createError } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+      });
+      if (createError || !created.user) return json({ error: createError?.message ?? 'Failed to create user' }, 400, corsHeaders);
+
+      const { error: profileError } = await adminClient.from('profiles').insert({
+        id: created.user.id,
+        email,
+        display_name: displayName,
+        role,
+      });
+      if (profileError) {
+        await adminClient.auth.admin.deleteUser(created.user.id); // roll back the orphaned auth user
+        return json({ error: profileError.message }, 400, corsHeaders);
+      }
+      return json({ ok: true, userId: created.user.id }, 200, corsHeaders);
     }
 
-    return json({ ok: true, userId: created.user.id }, 200, corsHeaders);
+    if (action === 'resetPassword') {
+      const { userId, newPassword } = body;
+      if (!userId || !newPassword) return json({ error: 'Missing userId or newPassword' }, 400, corsHeaders);
+      if (String(newPassword).length < 8) return json({ error: 'Password must be at least 8 characters' }, 400, corsHeaders);
+
+      const { error } = await adminClient.auth.admin.updateUserById(userId, { password: newPassword });
+      if (error) return json({ error: error.message }, 400, corsHeaders);
+      return json({ ok: true }, 200, corsHeaders);
+    }
+
+    if (action === 'delete') {
+      const { userId } = body;
+      if (!userId) return json({ error: 'Missing userId' }, 400, corsHeaders);
+      if (userId === userData.user.id) return json({ error: 'You cannot delete your own account' }, 400, corsHeaders);
+
+      const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(userId);
+      if (authDeleteError) return json({ error: authDeleteError.message }, 400, corsHeaders);
+      await adminClient.from('profiles').delete().eq('id', userId); // best-effort cleanup
+      return json({ ok: true }, 200, corsHeaders);
+    }
+
+    return json({ error: `Unknown action: ${action}` }, 400, corsHeaders);
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500, corsHeaders);
   }

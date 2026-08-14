@@ -2,10 +2,14 @@ import { useEffect, useState } from 'react';
 import type { Template, TemplateCategory } from '../../types/entities';
 import { templateService } from '../../services/template/templateService';
 import { RichTextEditor } from '../../components/common/RichTextEditor';
+import { useAuth } from '../../hooks/useAuth';
+import { hasPermission } from '../../services/auth/permissions';
 
 const CATEGORIES: TemplateCategory[] = ['birthday', 'christmas', 'new_year', 'mid_autumn', 'anniversary', 'promotion', 'thank_you'];
 
 export default function TemplatesPage() {
+  const { session } = useAuth();
+  const canEdit = !!session && hasPermission(session.role, 'templates.edit');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selected, setSelected] = useState<Template | null>(null);
   const [newName, setNewName] = useState('');
@@ -27,13 +31,15 @@ export default function TemplatesPage() {
     <div style={{ display: 'flex', gap: 20 }}>
       <div style={{ width: 280 }}>
         <h1>Templates</h1>
-        <div className="glass-panel" style={{ padding: 12, marginBottom: 12 }}>
-          <input placeholder="New template name" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
-          <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as TemplateCategory)} style={{ width: '100%', padding: 8, marginBottom: 8 }}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
-          </select>
-          <button onClick={handleCreate} style={{ width: '100%', padding: 8, background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>+ Create</button>
-        </div>
+        {canEdit && (
+          <div className="glass-panel" style={{ padding: 12, marginBottom: 12 }}>
+            <input placeholder="New template name" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
+            <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as TemplateCategory)} style={{ width: '100%', padding: 8, marginBottom: 8 }}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+            </select>
+            <button onClick={handleCreate} style={{ width: '100%', padding: 8, background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>+ Create</button>
+          </div>
+        )}
         <div className="glass-panel" style={{ padding: 8 }}>
           {templates.map((t) => (
             <div
@@ -51,11 +57,31 @@ export default function TemplatesPage() {
 
       <div style={{ flex: 1 }}>
         {selected && currentVersion ? (
-          <TemplateEditor template={selected} version={currentVersion} onSaved={async () => { const list = (await templateService.list()).items; setTemplates(list); setSelected(list.find((t) => t.id === selected.id) ?? null); }} />
+          canEdit ? (
+            <TemplateEditor template={selected} version={currentVersion} onSaved={async () => { const list = (await templateService.list()).items; setTemplates(list); setSelected(list.find((t) => t.id === selected.id) ?? null); }} />
+          ) : (
+            <TemplateReadOnlyView template={selected} version={currentVersion} />
+          )
         ) : (
-          <p style={{ color: '#999' }}>Select a template to edit its content.</p>
+          <p style={{ color: '#999' }}>Select a template to view its content.</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function TemplateReadOnlyView({ template, version }: { template: Template; version: ReturnType<typeof templateService.getCurrentVersion> }) {
+  return (
+    <div className="glass-panel" style={{ padding: 20 }}>
+      <h2 style={{ marginTop: 0, fontSize: 16 }}>{template.name} (v{version.versionNumber}) — chỉ xem</h2>
+      <label style={labelStyle}>Subject (VI)</label>
+      <p style={{ marginBottom: 12 }}>{version.subjectVi || '—'}</p>
+      <label style={labelStyle}>Subject (EN)</label>
+      <p style={{ marginBottom: 12 }}>{version.subjectEn || '—'}</p>
+      <label style={labelStyle}>Body (VI)</label>
+      <div style={readOnlyBox} dangerouslySetInnerHTML={{ __html: version.bodyVi || '<p style="color:#999">—</p>' }} />
+      <label style={{ ...labelStyle, marginTop: 14 }}>Body (EN)</label>
+      <div style={readOnlyBox} dangerouslySetInnerHTML={{ __html: version.bodyEn || '<p style="color:#999">—</p>' }} />
     </div>
   );
 }
@@ -110,3 +136,4 @@ const labelStyle: React.CSSProperties = { display: 'block', fontSize: 14, margin
 const inputStyle: React.CSSProperties = { width: '100%', padding: 8, marginTop: 4, borderRadius: 8, border: '1px solid #d0d7e2', fontFamily: 'inherit' };
 const primaryButtonStyle: React.CSSProperties = { padding: '10px 16px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer' };
 const secondaryButtonStyle: React.CSSProperties = { padding: '10px 16px', background: '#eee', color: '#333', border: 'none', borderRadius: 10, cursor: 'pointer' };
+const readOnlyBox: React.CSSProperties = { padding: 12, borderRadius: 8, border: '1px solid #eee', background: '#fafafa' };

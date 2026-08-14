@@ -72,15 +72,29 @@ export const authService = {
    * `create-user` Edge Function (which holds the service role key server
    * side — this can never be done safely from browser code directly). */
   async createUser(input: { email: string; password: string; displayName: string; role: UserRole }): Promise<void> {
+    await authService.callAdminFunction({ action: 'create', ...input });
+  },
+
+  /** Admin-only: sets a new password for another user's account. */
+  async resetPassword(userId: string, newPassword: string): Promise<void> {
+    await authService.callAdminFunction({ action: 'resetPassword', userId, newPassword });
+  },
+
+  /** Admin-only: permanently deletes a user's login + profile. */
+  async deleteUser(userId: string): Promise<void> {
+    await authService.callAdminFunction({ action: 'delete', userId });
+  },
+
+  async callAdminFunction(body: Record<string, unknown>): Promise<void> {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     if (!token) throw new ValidationError('Not authenticated');
 
     const { data, error } = await supabase.functions.invoke('create-user', {
-      body: input,
+      body,
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (error) throw new ValidationError(error.message ?? 'Failed to create user');
+    if (error) throw new ValidationError(error.message ?? 'Request failed');
     if (data?.error) throw new ValidationError(data.error);
   },
 

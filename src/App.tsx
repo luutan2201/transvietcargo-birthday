@@ -21,14 +21,35 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/email" element={<EmailGeneratorPage />} />
-          <Route path="/cards" element={<CardGeneratorPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+
+          <Route element={<ProtectedRoute requiredPermission="customers.view" />}>
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="templates.view" />}>
+            <Route path="/templates" element={<TemplatesPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="email.generate" />}>
+            <Route path="/email" element={<EmailGeneratorPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="card.generate" />}>
+            <Route path="/cards" element={<CardGeneratorPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="history.view" />}>
+            <Route path="/history" element={<HistoryPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="settings.edit" />}>
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute requiredPermission="admin.access" />}>
+            <Route path="/admin" element={<AdminPage />} />
+          </Route>
         </Route>
       </Route>
 

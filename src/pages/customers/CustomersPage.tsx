@@ -3,6 +3,8 @@ import type { Customer, GreetingType, Station } from '../../types/entities';
 import { customerService } from '../../services/customer/customerService';
 import { CustomerFormModal } from '../../components/customer/CustomerFormModal';
 import { CustomerImportModal } from '../../components/customer/CustomerImportModal';
+import { useAuth } from '../../hooks/useAuth';
+import { hasPermission } from '../../services/auth/permissions';
 
 const MONTHS = [
   { value: 0, label: 'All months' },
@@ -23,6 +25,8 @@ function sortByBirthday(customers: Customer[]): Customer[] {
 }
 
 export default function CustomersPage() {
+  const { session } = useAuth();
+  const canEdit = !!session && hasPermission(session.role, 'customers.edit');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
   const [birthMonth, setBirthMonth] = useState(0);
@@ -79,8 +83,8 @@ export default function CustomersPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Customers</h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setShowImport(true)} style={secondaryButtonStyle}>Import Excel</button>
-          <button onClick={() => setEditing(null)} style={primaryButtonStyle}>+ New Customer</button>
+          {canEdit && <button onClick={() => setShowImport(true)} style={secondaryButtonStyle}>Import Excel</button>}
+          {canEdit && <button onClick={() => setEditing(null)} style={primaryButtonStyle}>+ New Customer</button>}
         </div>
       </div>
 
@@ -160,15 +164,15 @@ export default function CustomersPage() {
                   <td style={ellipsisTd} title={c.giftSuggestion}>
                     {c.greetingType === 'gift_visit' ? (c.giftSuggestion || '—') : ''}
                   </td>
-                  <td style={td}><input type="checkbox" checked={c.ecardSent} onChange={() => handleToggleEcard(c)} /></td>
+                  <td style={td}><input type="checkbox" checked={c.ecardSent} disabled={!canEdit} onChange={() => handleToggleEcard(c)} /></td>
                   <td style={td}>
                     {c.greetingType === 'gift_visit' && (
-                      <input type="checkbox" checked={c.giftGiven} onChange={() => handleToggleGift(c)} />
+                      <input type="checkbox" checked={c.giftGiven} disabled={!canEdit} onChange={() => handleToggleGift(c)} />
                     )}
                   </td>
                   <td style={td}>
-                    <button onClick={() => setEditing(c)} style={linkBtn}>Edit</button>
-                    <button onClick={() => handleDelete(c.id)} style={{ ...linkBtn, color: 'var(--color-danger)' }}>Delete</button>
+                    {canEdit && <button onClick={() => setEditing(c)} style={linkBtn}>Edit</button>}
+                    {canEdit && <button onClick={() => handleDelete(c.id)} style={{ ...linkBtn, color: 'var(--color-danger)' }}>Delete</button>}
                   </td>
                 </tr>
               ))
