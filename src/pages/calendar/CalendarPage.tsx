@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Customer, Station } from '../../types/entities';
 import { customerService } from '../../services/customer/customerService';
 
@@ -14,6 +15,7 @@ const GIFT_COLOR = '#2563EB';
 type StationFilter = 'ALL' | Station;
 
 export default function CalendarPage() {
+  const navigate = useNavigate();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-12
   const [year, setYear] = useState(now.getFullYear());
@@ -100,7 +102,14 @@ export default function CalendarPage() {
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>{day}</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 76, overflowY: 'auto' }}>
                           {(byDay.get(day) ?? []).map((c) => (
-                            <div key={c.id} title={`${c.fullName} — ${c.company ?? ''} (${c.station})`} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, background: '#fff', borderRadius: 8, padding: '3px 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div
+                              key={c.id}
+                              title={`${c.fullName} — ${c.company ?? ''} (${c.station}) — bấm để xem chi tiết`}
+                              onClick={() => navigate(`/customers?customerId=${c.id}`)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, background: '#fff', borderRadius: 8, padding: '3px 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
+                              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(20,126,147,0.10)')}
+                              onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                            >
                               <Dot color={c.greetingType === 'gift_visit' ? GIFT_COLOR : ECARD_COLOR} />
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {c.fullName}{c.company ? ` | ${c.company}` : ''}

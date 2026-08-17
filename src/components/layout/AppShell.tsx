@@ -38,7 +38,11 @@ export function AppShell() {
       <aside
         style={{
           width: 260,
-          minHeight: '100vh',
+          height: '100vh',
+          position: 'sticky',
+          top: 0,
+          alignSelf: 'flex-start',
+          overflowY: 'auto',
           background: 'linear-gradient(180deg, var(--color-primary-dark), var(--color-primary))',
           padding: '28px 18px',
           display: 'flex',

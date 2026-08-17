@@ -41,6 +41,8 @@ export interface Customer extends BaseEntity {
   station: Station;
   /** Only meaningful when greetingType === 'gift_visit'. Sales team edits this after the initial suggestion. */
   giftSuggestion?: string;
+  /** Estimated/allocated budget for the gift, in the company's local currency. Only meaningful when greetingType === 'gift_visit'. */
+  giftBudget?: number;
   /** Marked true once the eCard/email has been sent for the current campaign cycle. */
   ecardSent: boolean;
   /** Marked true once the physical gift has been delivered. Only relevant for gift_visit customers. */

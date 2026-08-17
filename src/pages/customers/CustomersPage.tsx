@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Customer, GreetingType, Station } from '../../types/entities';
 import { customerService } from '../../services/customer/customerService';
 import { CustomerFormModal } from '../../components/customer/CustomerFormModal';
@@ -24,9 +25,17 @@ function sortByBirthday(customers: Customer[]): Customer[] {
   });
 }
 
+function formatMoney(n?: number): string {
+  if (n === undefined) return '—';
+  return n.toLocaleString('vi-VN');
+}
+
 export default function CustomersPage() {
   const { session } = useAuth();
   const canEdit = !!session && hasPermission(session.role, 'customers.edit');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusedCustomerId = searchParams.get('customerId');
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
   const [birthMonth, setBirthMonth] = useState(0);
@@ -37,8 +46,16 @@ export default function CustomersPage() {
   const [editing, setEditing] = useState<Customer | null | undefined>(undefined);
   const [showImport, setShowImport] = useState(false);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
+  const reload = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+
+    if (focusedCustomerId) {
+      const c = await customerService.getById(focusedCustomerId);
+      setCustomers(c ? [c] : []);
+      if (!silent) setLoading(false);
+      return;
+    }
+
     let results: Customer[];
     const hasFilters = birthMonth || station || greetingType || pendingOnly;
     if (search) {
@@ -54,28 +71,38 @@ export default function CustomersPage() {
       results = (await customerService.list({ pageSize: 1000 })).items;
     }
     setCustomers(sortByBirthday(results));
-    setLoading(false);
-  }, [search, birthMonth, station, greetingType, pendingOnly]);
+    if (!silent) setLoading(false);
+  }, [search, birthMonth, station, greetingType, pendingOnly, focusedCustomerId]);
 
   useEffect(() => {
-    const t = setTimeout(reload, 250); // debounce
+    const t = setTimeout(() => reload(), 250); // debounce
     return () => clearTimeout(t);
   }, [reload]);
+
+  function clearFocus() {
+    searchParams.delete('customerId');
+    setSearchParams(searchParams);
+  }
 
   async function handleDelete(id: string) {
     if (!confirm('Move this customer to trash?')) return;
     await customerService.softDelete(id);
-    reload();
+    reload(true);
   }
 
+  // Toggling a checkbox updates local state immediately (no full reload,
+  // no "Loading…" flicker) — this is what previously collapsed the table
+  // height and reset the page's scroll position back to the top.
   async function handleToggleEcard(c: Customer) {
-    await customerService.toggleEcardSent(c.id, !c.ecardSent);
-    reload();
+    const next = !c.ecardSent;
+    setCustomers((prev) => prev.map((x) => (x.id === c.id ? { ...x, ecardSent: next } : x)));
+    await customerService.toggleEcardSent(c.id, next);
   }
 
   async function handleToggleGift(c: Customer) {
-    await customerService.toggleGiftGiven(c.id, !c.giftGiven);
-    reload();
+    const next = !c.giftGiven;
+    setCustomers((prev) => prev.map((x) => (x.id === c.id ? { ...x, giftGiven: next } : x)));
+    await customerService.toggleGiftGiven(c.id, next);
   }
 
   return (
@@ -88,46 +115,57 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '16px 0' }}>
-        <input
-          placeholder="Search by name, email, company…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 260, padding: 10, borderRadius: 10, border: '1px solid #d0d7e2' }}
-        />
-        <select value={birthMonth} onChange={(e) => setBirthMonth(Number(e.target.value))} style={selectStyle}>
-          {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-        </select>
-        <select value={station} onChange={(e) => setStation(e.target.value as Station | '')} style={selectStyle}>
-          <option value="">All stations</option>
-          <option value="SGN">SGN</option>
-          <option value="HAN">HAN</option>
-        </select>
-        <select value={greetingType} onChange={(e) => setGreetingType(e.target.value as GreetingType | '')} style={selectStyle}>
-          <option value="">All greeting types</option>
-          <option value="ecard_only">eCard only</option>
-          <option value="gift_visit">Gift visit</option>
-        </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 15 }}>
-          <input type="checkbox" checked={pendingOnly} onChange={(e) => setPendingOnly(e.target.checked)} />
-          Chưa hoàn thành
-        </label>
-      </div>
+      {focusedCustomerId ? (
+        <div className="glass-panel" style={{ padding: 12, margin: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 15 }}>Đang xem 1 khách hàng cụ thể (từ Calendar).</span>
+          <button onClick={clearFocus} style={secondaryButtonStyle}>Xem tất cả khách hàng</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '16px 0' }}>
+          <input
+            placeholder="Search by name, email, company…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: 260, padding: 10, borderRadius: 10, border: '1px solid #d0d7e2' }}
+          />
+          <select value={birthMonth} onChange={(e) => setBirthMonth(Number(e.target.value))} style={selectStyle}>
+            {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+          <select value={station} onChange={(e) => setStation(e.target.value as Station | '')} style={selectStyle}>
+            <option value="">All stations</option>
+            <option value="SGN">SGN</option>
+            <option value="HAN">HAN</option>
+          </select>
+          <select value={greetingType} onChange={(e) => setGreetingType(e.target.value as GreetingType | '')} style={selectStyle}>
+            <option value="">All greeting types</option>
+            <option value="ecard_only">eCard only</option>
+            <option value="gift_visit">Gift visit</option>
+          </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 15 }}>
+            <input type="checkbox" checked={pendingOnly} onChange={(e) => setPendingOnly(e.target.checked)} />
+            Chưa hoàn thành
+          </label>
+        </div>
+      )}
+
+      {canEdit && <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 10px' }}>Bấm vào 1 dòng bất kỳ để chỉnh sửa.</p>}
 
       <div className="glass-panel" style={{ padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15, tableLayout: 'fixed' }}>
           <colgroup>
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '5%' }} />
             <col style={{ width: '10%' }} />
             <col style={{ width: '13%' }} />
             <col style={{ width: '6%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '8%' }} />
             <col style={{ width: '11%' }} />
-            <col style={{ width: '15%' }} />
             <col style={{ width: '7%' }} />
+            <col style={{ width: '4%' }} />
+            <col style={{ width: '4%' }} />
             <col style={{ width: '6%' }} />
-            <col style={{ width: '9%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '5%' }} />
           </colgroup>
           <thead>
             <tr style={{ background: 'rgba(0,59,122,0.06)', textAlign: 'left' }}>
@@ -140,19 +178,26 @@ export default function CustomersPage() {
               <th style={th}>Station</th>
               <th style={th}>Type</th>
               <th style={th}>Gift suggestion</th>
+              <th style={th}>Budget</th>
               <th style={th}>eCard</th>
               <th style={th}>Gift</th>
-              <th style={th}></th>
+              {canEdit && <th style={th}></th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td style={td} colSpan={12}>Loading…</td></tr>
+              <tr><td style={td} colSpan={13}>Loading…</td></tr>
             ) : customers.length === 0 ? (
-              <tr><td style={td} colSpan={12}>No customers found.</td></tr>
+              <tr><td style={td} colSpan={13}>No customers found.</td></tr>
             ) : (
               customers.map((c) => (
-                <tr key={c.id} style={{ borderTop: '1px solid #eee' }}>
+                <tr
+                  key={c.id}
+                  onClick={() => canEdit && setEditing(c)}
+                  style={{ borderTop: '1px solid #eee', cursor: canEdit ? 'pointer' : 'default' }}
+                  onMouseEnter={(e) => canEdit && (e.currentTarget.style.background = 'rgba(20,126,147,0.04)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
                   <td style={ellipsisTd} title={c.company}>{c.company || '—'}</td>
                   <td style={ellipsisTd} title={c.fullName}>{c.fullName}</td>
                   <td style={td}>{genderLabel(c.gender)}</td>
@@ -164,16 +209,20 @@ export default function CustomersPage() {
                   <td style={ellipsisTd} title={c.giftSuggestion}>
                     {c.greetingType === 'gift_visit' ? (c.giftSuggestion || '—') : ''}
                   </td>
-                  <td style={td}><input type="checkbox" checked={c.ecardSent} disabled={!canEdit} onChange={() => handleToggleEcard(c)} /></td>
-                  <td style={td}>
+                  <td style={ellipsisTd}>{c.greetingType === 'gift_visit' ? formatMoney(c.giftBudget) : ''}</td>
+                  <td style={td} onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" checked={c.ecardSent} disabled={!canEdit} onChange={() => handleToggleEcard(c)} />
+                  </td>
+                  <td style={td} onClick={(e) => e.stopPropagation()}>
                     {c.greetingType === 'gift_visit' && (
                       <input type="checkbox" checked={c.giftGiven} disabled={!canEdit} onChange={() => handleToggleGift(c)} />
                     )}
                   </td>
-                  <td style={td}>
-                    {canEdit && <button onClick={() => setEditing(c)} style={linkBtn}>Edit</button>}
-                    {canEdit && <button onClick={() => handleDelete(c.id)} style={{ ...linkBtn, color: 'var(--color-danger)' }}>Delete</button>}
-                  </td>
+                  {canEdit && (
+                    <td style={td} onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => handleDelete(c.id)} style={{ ...linkBtn, color: 'var(--color-danger)' }}>Delete</button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
@@ -185,7 +234,7 @@ export default function CustomersPage() {
         <CustomerFormModal
           customer={editing}
           onClose={() => setEditing(undefined)}
-          onSaved={() => { setEditing(undefined); reload(); }}
+          onSaved={() => { setEditing(undefined); reload(true); }}
         />
       )}
       {showImport && (

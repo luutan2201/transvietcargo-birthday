@@ -31,6 +31,7 @@ export const customerService = {
     greetingType: GreetingType;
     station: Station;
     giftSuggestion?: string;
+    giftBudget?: number;
   }) {
     const existing = await customerRepository.findByEmail(input.email);
     if (existing) throw new ValidationError(`Email "${input.email}" already exists`);
@@ -49,6 +50,7 @@ export const customerService = {
       greetingType: input.greetingType,
       station: input.station,
       giftSuggestion: input.greetingType === 'gift_visit' ? input.giftSuggestion : undefined,
+      giftBudget: input.greetingType === 'gift_visit' ? input.giftBudget : undefined,
       ecardSent: false,
       giftGiven: false,
     });
@@ -84,6 +86,7 @@ export const customerService = {
           greetingType,
           station: row.station ?? existing.station,
           giftSuggestion: greetingType === 'gift_visit' ? (row.giftSuggestion ?? existing.giftSuggestion) : undefined,
+          giftBudget: greetingType === 'gift_visit' ? (row.giftBudget ?? existing.giftBudget) : undefined,
         });
         results.updated++;
         continue;
@@ -103,6 +106,7 @@ export const customerService = {
         greetingType,
         station: row.station ?? 'SGN',
         giftSuggestion: greetingType === 'gift_visit' ? row.giftSuggestion : undefined,
+        giftBudget: greetingType === 'gift_visit' ? row.giftBudget : undefined,
         ecardSent: false,
         giftGiven: false,
       });

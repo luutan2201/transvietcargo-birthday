@@ -18,6 +18,7 @@ export function CustomerFormModal({ customer, onClose, onSaved }: Props) {
   const [greetingType, setGreetingType] = useState<GreetingType>(customer?.greetingType ?? 'ecard_only');
   const [station, setStation] = useState<Station>(customer?.station ?? 'SGN');
   const [giftSuggestion, setGiftSuggestion] = useState(customer?.giftSuggestion ?? '');
+  const [giftBudget, setGiftBudget] = useState(customer?.giftBudget !== undefined ? String(customer.giftBudget) : '');
   const [ecardSent, setEcardSent] = useState(customer?.ecardSent ?? false);
   const [giftGiven, setGiftGiven] = useState(customer?.giftGiven ?? false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +40,7 @@ export function CustomerFormModal({ customer, onClose, onSaved }: Props) {
           greetingType,
           station,
           giftSuggestion: greetingType === 'gift_visit' ? giftSuggestion : undefined,
+          giftBudget: greetingType === 'gift_visit' && giftBudget ? Number(giftBudget) : undefined,
           ecardSent,
           giftGiven: greetingType === 'gift_visit' ? giftGiven : false,
         });
@@ -53,6 +55,7 @@ export function CustomerFormModal({ customer, onClose, onSaved }: Props) {
           greetingType,
           station,
           giftSuggestion,
+          giftBudget: giftBudget ? Number(giftBudget) : undefined,
         });
       }
       onSaved();
@@ -98,15 +101,27 @@ export function CustomerFormModal({ customer, onClose, onSaved }: Props) {
           </Field>
 
           {greetingType === 'gift_visit' && (
-            <Field label="Gift suggestion (sales can edit anytime)">
-              <textarea
-                value={giftSuggestion}
-                onChange={(e) => setGiftSuggestion(e.target.value)}
-                rows={3}
-                placeholder="e.g. Hộp trà cao cấp, voucher spa…"
-                style={inputStyle}
-              />
-            </Field>
+            <>
+              <Field label="Gift suggestion (sales can edit anytime)">
+                <textarea
+                  value={giftSuggestion}
+                  onChange={(e) => setGiftSuggestion(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Hộp trà cao cấp, voucher spa…"
+                  style={inputStyle}
+                />
+              </Field>
+              <Field label="Budget (ngân sách dự kiến)">
+                <input
+                  type="number"
+                  min={0}
+                  value={giftBudget}
+                  onChange={(e) => setGiftBudget(e.target.value)}
+                  placeholder="e.g. 500000"
+                  style={inputStyle}
+                />
+              </Field>
+            </>
           )}
 
           {customer && (

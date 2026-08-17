@@ -40,6 +40,7 @@ create table if not exists public.customers (
   greeting_type text not null default 'ecard_only' check (greeting_type in ('ecard_only','gift_visit')),
   station text not null default 'SGN' check (station in ('SGN','HAN')),
   gift_suggestion text,
+  gift_budget numeric,
   ecard_sent boolean not null default false,
   gift_given boolean not null default false,
   notes text,

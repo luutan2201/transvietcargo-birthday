@@ -94,7 +94,24 @@ export const authService = {
       body,
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (error) throw new ValidationError(error.message ?? 'Request failed');
+    if (error) {
+      // supabase-js's generic "Edge Function returned a non-2xx status
+      // code" hides the real reason — the function's actual JSON error
+      // body is on error.context (a Response), so read it for the
+      // specific message before falling back to the generic one.
+      const context = (error as { context?: Response }).context;
+      let detail: string | null = null;
+      if (context && typeof context.json === 'function') {
+        try {
+          const body = await context.json();
+          detail = body?.error ?? null;
+        } catch {
+          // context wasn't valid JSON — ignore and fall back below
+        }
+      }
+      logger.error('Edge Function call failed', { error, detail });
+      throw new ValidationError(detail ?? error.message ?? 'Request failed');
+    }
     if (data?.error) throw new ValidationError(data.error);
   },
 

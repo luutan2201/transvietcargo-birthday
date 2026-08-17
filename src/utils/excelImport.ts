@@ -11,6 +11,7 @@ export interface ImportRow {
   station?: Station;
   greetingType?: GreetingType;
   giftSuggestion?: string;
+  giftBudget?: number;
   /** Raw, unparsed Birthday cell value — kept for the import preview so
    * users can see exactly what was in the source cell vs. what was parsed. */
   rawBirthday?: string;
@@ -31,6 +32,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   station: ['station', 'trạm', 'tram'],
   greetingType: ['type', 'greeting type', 'loại', 'loai', 'loại chúc mừng'],
   giftSuggestion: ['gift suggestion', 'gift', 'gợi ý quà', 'goi y qua'],
+  giftBudget: ['budget', 'ngân sách', 'ngan sach'],
 };
 
 function normalizeHeader(h: string): string {
@@ -54,6 +56,13 @@ function mapStation(raw: unknown): Station | undefined {
   const v = String(raw ?? '').trim().toUpperCase();
   if (v === 'SGN' || v === 'HAN') return v;
   return undefined;
+}
+
+function parseBudget(raw: unknown): number | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  const cleaned = String(raw).replace(/[^\d.,-]/g, '').replace(/,/g, '');
+  const n = Number(cleaned);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
 function mapGreetingType(raw: unknown): GreetingType | undefined {
@@ -158,6 +167,7 @@ export async function parseCustomerFile(file: File): Promise<ImportResult> {
       station: mapStation(normalized.station),
       greetingType: mapGreetingType(normalized.greetingType),
       giftSuggestion: normalized.giftSuggestion ? String(normalized.giftSuggestion) : undefined,
+      giftBudget: parseBudget(normalized.giftBudget),
       rawBirthday: normalized.birthDate !== undefined && normalized.birthDate !== '' ? String(normalized.birthDate) : undefined,
     });
   });
