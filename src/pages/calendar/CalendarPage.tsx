@@ -96,17 +96,17 @@ export default function CalendarPage() {
             {weeks.map((week, wi) => (
               <tr key={wi}>
                 {week.map((day, di) => (
-                  <td key={di} style={{ verticalAlign: 'top', border: '1px solid rgba(20,126,147,0.10)', padding: 6, height: 110, background: day && isToday(year, month, day) ? 'rgba(20,126,147,0.06)' : 'transparent' }}>
+                  <td key={di} style={{ verticalAlign: 'top', border: '1px solid rgba(20,126,147,0.10)', padding: 6, height: 128, background: day && isToday(year, month, day) ? 'rgba(20,126,147,0.06)' : 'transparent' }}>
                     {day && (
                       <>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>{day}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 76, overflowY: 'auto' }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>{day}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 92, overflowY: 'auto' }}>
                           {(byDay.get(day) ?? []).map((c) => (
                             <div
                               key={c.id}
                               title={`${c.fullName} — ${c.company ?? ''} (${c.station}) — bấm để xem chi tiết`}
                               onClick={() => navigate(`/customers?customerId=${c.id}`)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, background: '#fff', borderRadius: 8, padding: '3px 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 14, fontWeight: 500, background: '#fff', borderRadius: 8, padding: '5px 7px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
                               onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(20,126,147,0.10)')}
                               onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
                             >
