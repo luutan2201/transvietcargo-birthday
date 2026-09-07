@@ -12,6 +12,7 @@ const NAV_ITEMS: Array<{ to: string; label: string; icon: string; permission?: P
   { to: '/cards', label: 'eCard Generator', icon: '◈', permission: 'card.generate' },
   { to: '/email', label: 'Email Generator', icon: '✉', permission: 'email.generate' },
   { to: '/history', label: 'History', icon: '◷', permission: 'history.view' },
+  { to: '/guideline', label: 'Guideline', icon: '☑' },
 ];
 
 const SYSTEM_ITEMS: Array<{ to: string; label: string; icon: string; permission?: Parameters<typeof hasPermission>[1] }> = [

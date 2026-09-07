@@ -12,6 +12,7 @@ import CardGeneratorPage from './pages/cards/CardGeneratorPage';
 import HistoryPage from './pages/history/HistoryPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import AdminPage from './pages/admin/AdminPage';
+import GuidelinePage from './pages/guideline/GuidelinePage';
 
 export default function App() {
   return (
@@ -42,6 +43,8 @@ export default function App() {
           <Route element={<ProtectedRoute requiredPermission="history.view" />}>
             <Route path="/history" element={<HistoryPage />} />
           </Route>
+
+          <Route path="/guideline" element={<GuidelinePage />} />
 
           <Route element={<ProtectedRoute requiredPermission="settings.edit" />}>
             <Route path="/settings" element={<SettingsPage />} />
