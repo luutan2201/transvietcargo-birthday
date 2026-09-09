@@ -79,6 +79,7 @@ export default function CalendarPage() {
           <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginRight: 4 }}>Station:</span>
           <StationButton active={stationFilter === 'ALL'} onClick={() => setStationFilter('ALL')}>Tất cả</StationButton>
           <StationButton active={stationFilter === 'SGN'} onClick={() => setStationFilter('SGN')}>SGN</StationButton>
+          <StationButton active={stationFilter === 'DAD'} onClick={() => setStationFilter('DAD')}>DAD</StationButton>
           <StationButton active={stationFilter === 'HAN'} onClick={() => setStationFilter('HAN')}>HAN</StationButton>
         </div>
       </div>

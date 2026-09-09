@@ -38,7 +38,7 @@ create table if not exists public.customers (
   status text not null default 'active',
   birth_date date,
   greeting_type text not null default 'ecard_only' check (greeting_type in ('ecard_only','gift_visit')),
-  station text not null default 'SGN' check (station in ('SGN','HAN')),
+  station text not null default 'SGN' check (station in ('SGN','DAD','HAN')),
   gift_suggestion text,
   gift_budget numeric,
   ecard_sent boolean not null default false,
@@ -77,6 +77,8 @@ create table if not exists public.signatures (
   html_content text not null,
   is_default boolean not null default false,
   version_number int not null default 1,
+  effective_from date,
+  effective_to date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz

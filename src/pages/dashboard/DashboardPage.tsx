@@ -49,7 +49,7 @@ export default function DashboardPage() {
     { name: 'Còn lại', value: remainingCount },
   ];
 
-  const stationBreakdown = (['SGN', 'HAN'] as const).map((station) => ({
+  const stationBreakdown = (['SGN', 'DAD', 'HAN'] as const).map((station) => ({
     station,
     'eCard only': birthdaysThisMonth.filter((c) => c.station === station && c.greetingType === 'ecard_only').length,
     'Gift visit': birthdaysThisMonth.filter((c) => c.station === station && c.greetingType === 'gift_visit').length,

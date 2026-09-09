@@ -141,6 +141,8 @@ export interface SignatureRow {
   html_content: string;
   is_default: boolean;
   version_number: number;
+  effective_from: string | null;
+  effective_to: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -153,6 +155,8 @@ export function signatureFromRow(r: SignatureRow): Signature {
     htmlContent: r.html_content,
     isDefault: r.is_default,
     versionNumber: r.version_number,
+    effectiveFrom: r.effective_from ?? undefined,
+    effectiveTo: r.effective_to ?? undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     deletedAt: r.deleted_at,

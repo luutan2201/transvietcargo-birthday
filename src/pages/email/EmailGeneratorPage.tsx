@@ -10,6 +10,7 @@ import { cardGeneratorService, type TextBlockRenderConfig } from '../../services
 import { emailGeneratorService, type RenderedEmail } from '../../services/email/emailRenderService';
 import { buildPlaceholderMap, renderPlaceholders } from '../../utils/placeholderEngine';
 import { blobToDataUrl } from '../../utils/fileUtils';
+import { copyRichHtml } from '../../utils/richClipboard';
 import { CustomerPicker } from '../../components/common/CustomerPicker';
 
 export default function EmailGeneratorPage() {
@@ -24,7 +25,7 @@ export default function EmailGeneratorPage() {
   const [rendered, setRendered] = useState<RenderedEmail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'rich' | 'fallback' | null>(null);
 
   const customer = customers.find((c) => c.id === customerId);
   const availableCardTemplates = customer ? cardTemplates.filter((t) => t.gender === (customer.gender === 'female' ? 'female' : 'male')) : [];
@@ -71,14 +72,14 @@ export default function EmailGeneratorPage() {
 
   async function handleGenerate() {
     setError(null);
-    setCopied(false);
+    setCopied(null);
     const template = templates.find((t) => t.id === templateId);
     if (!customer || !template) { setError('Select a customer and a template first.'); return; }
 
     setGenerating(true);
     try {
       const version = templateService.getCurrentVersion(template);
-      const signature = await signatureService.getDefault();
+      const signature = await signatureService.getEffectiveSignature();
       const cardHtml = await buildCardHtml();
       const result = emailGeneratorService.render(version, customer, language, signature, cardHtml);
       setRendered(result);
@@ -90,10 +91,10 @@ export default function EmailGeneratorPage() {
     }
   }
 
-  function handleCopyHtml() {
+  async function handleCopyHtml() {
     if (!rendered) return;
-    navigator.clipboard.writeText(rendered.html);
-    setCopied(true);
+    const richSuccess = await copyRichHtml(rendered.html);
+    setCopied(richSuccess ? 'rich' : 'fallback');
   }
 
   return (
@@ -146,9 +147,15 @@ export default function EmailGeneratorPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <strong>Subject: {rendered.subject}</strong>
                 <button onClick={handleCopyHtml} style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: 'var(--color-primary)', color: '#fff', cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap' }}>
-                  {copied ? '✓ Copied' : 'Copy HTML for Outlook'}
+                  {copied === 'rich' ? '✓ Đã copy' : 'Copy để dán vào Outlook'}
                 </button>
               </div>
+              {copied === 'fallback' && (
+                <p style={{ fontSize: 12, color: 'var(--color-warning)', marginTop: 6 }}>
+                  Trình duyệt không hỗ trợ copy định dạng — đã copy mã HTML thô, dán vào Outlook có thể không giữ được định dạng.
+                  Thử lại bằng Chrome/Edge phiên bản mới.
+                </p>
+              )}
               <iframe title="email-preview" srcDoc={rendered.html} style={{ width: '100%', height: 560, marginTop: 14, border: '1px solid rgba(20,126,147,0.15)', borderRadius: 12, background: '#fff' }} />
             </div>
           ) : (

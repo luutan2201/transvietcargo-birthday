@@ -11,26 +11,39 @@ import 'quill/dist/quill.snow.css';
 const AlignStyle = Quill.import('attributors/style/align') as any;
 const ColorStyle = Quill.import('attributors/style/color') as any;
 const BackgroundStyle = Quill.import('attributors/style/background') as any;
-/* eslint-enable @typescript-eslint/no-explicit-any */
+const SizeStyle = Quill.import('attributors/style/size') as any;
+SizeStyle.whitelist = ['10px', '12px', '13px', '14px', '16px', '18px', '20px', '24px', '28px'];
+const FontStyle = Quill.import('attributors/style/font') as any;
+FontStyle.whitelist = ['Arial', 'Segoe UI', 'Times New Roman', 'Calibri', 'Georgia', 'Verdana'];
 Quill.register(AlignStyle, true);
 Quill.register(ColorStyle, true);
 Quill.register(BackgroundStyle, true);
+Quill.register(SizeStyle, true);
+Quill.register(FontStyle, true);
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 interface Props {
   value: string; // HTML
   onChange: (html: string) => void;
   placeholder?: string;
+  /** Full Outlook-style toolbar (font family, size, background color,
+   * image upload) — used for the signature editor. Defaults to the
+   * simpler toolbar (bold/italic/underline/color/align) used for email
+   * template bodies, unchanged from before. */
+  full?: boolean;
 }
 
 /**
- * Quill-based rich text editor for email body content. Toolbar is
- * intentionally restricted to bold/italic/underline/color/align — Quill
- * emits these as inline styles (not CSS classes), which stay compatible
- * with the Outlook-safe table wrapper in emailRenderService. Paragraph
- * breaks (Enter) become real <p> tags, so line breaks are preserved
- * exactly instead of being collapsed like plain-text <textarea> was.
+ * Quill-based rich text editor — used both for template email bodies and
+ * for the Outlook-style signature editor. Toolbar emits inline styles
+ * (not CSS classes), which stay compatible with the Outlook-safe table
+ * wrapper in emailRenderService. Paragraph breaks (Enter) become real
+ * <p> tags, so line breaks are preserved exactly instead of being
+ * collapsed like a plain-text <textarea> would. Image uploads are read
+ * as base64 and embedded inline, so signatures/emails stay a single
+ * self-contained block of HTML with no external image dependency.
  */
-export function RichTextEditor({ value, onChange, placeholder }: Props) {
+export function RichTextEditor({ value, onChange, placeholder, full }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
   const onChangeRef = useRef(onChange);
@@ -42,13 +55,46 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
     const editorEl = document.createElement('div');
     mountEl.appendChild(editorEl);
 
+    const toolbar = full
+      ? [
+          [{ font: FontStyle.whitelist }, { size: SizeStyle.whitelist }],
+          ['bold', 'italic', 'underline'],
+          [{ color: [] }, { background: [] }],
+          [{ align: [] }],
+          ['image'],
+          ['clean'],
+        ]
+      : [['bold', 'italic', 'underline'], [{ color: [] }], [{ align: [] }], ['clean']];
+
     const quill = new Quill(editorEl, {
       theme: 'snow',
       placeholder,
-      modules: {
-        toolbar: [['bold', 'italic', 'underline'], [{ color: [] }], [{ align: [] }], ['clean']],
-      },
+      modules: { toolbar: { container: toolbar, handlers: full ? { image: handleImageInsert } : undefined } },
     });
+
+    function handleImageInsert(this: unknown) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const range = quill.getSelection(true);
+          const index = range?.index ?? 0;
+          quill.insertEmbed(index, 'image', reader.result);
+          quill.setSelection(index + 1, 0);
+          // Constrain inserted images so a large upload doesn't blow out
+          // the layout — Quill's default image blot has no size limit.
+          const img = quill.root.querySelector(`img[src="${reader.result}"]`) as HTMLImageElement | null;
+          if (img) img.setAttribute('style', 'max-width:100%;height:auto;');
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    }
+
     quill.root.innerHTML = value;
     quill.on('text-change', () => {
       onChangeRef.current(quill.root.innerHTML);

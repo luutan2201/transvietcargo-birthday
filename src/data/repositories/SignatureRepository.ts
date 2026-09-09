@@ -24,7 +24,14 @@ export class SignatureRepository {
     }
     const { data, error } = await supabase
       .from(TABLE)
-      .insert({ name: entity.name, html_content: entity.htmlContent, is_default: entity.isDefault, version_number: entity.versionNumber })
+      .insert({
+        name: entity.name,
+        html_content: entity.htmlContent,
+        is_default: entity.isDefault,
+        version_number: entity.versionNumber,
+        effective_from: entity.effectiveFrom ?? null,
+        effective_to: entity.effectiveTo ?? null,
+      })
       .select()
       .single();
     if (error) throw new RepositoryError('Failed to create signature', error);
@@ -49,10 +56,12 @@ export class SignatureRepository {
     if (error) throw new RepositoryError('Failed to delete signature', error);
   }
 
-  async update(id: string, patch: Partial<Pick<Signature, 'name' | 'htmlContent'>>): Promise<Signature> {
+  async update(id: string, patch: Partial<Pick<Signature, 'name' | 'htmlContent' | 'effectiveFrom' | 'effectiveTo'>>): Promise<Signature> {
     const row: Record<string, unknown> = {};
     if (patch.name !== undefined) row.name = patch.name;
     if (patch.htmlContent !== undefined) row.html_content = patch.htmlContent;
+    if (patch.effectiveFrom !== undefined) row.effective_from = patch.effectiveFrom ?? null;
+    if (patch.effectiveTo !== undefined) row.effective_to = patch.effectiveTo ?? null;
     const { data, error } = await supabase.from(TABLE).update(row).eq('id', id).select().single();
     if (error) throw new RepositoryError('Failed to update signature', error);
     return signatureFromRow(data as SignatureRow);

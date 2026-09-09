@@ -134,6 +134,7 @@ export default function CustomersPage() {
           <select value={station} onChange={(e) => setStation(e.target.value as Station | '')} style={selectStyle}>
             <option value="">All stations</option>
             <option value="SGN">SGN</option>
+            <option value="DAD">DAD</option>
             <option value="HAN">HAN</option>
           </select>
           <select value={greetingType} onChange={(e) => setGreetingType(e.target.value as GreetingType | '')} style={selectStyle}>
@@ -255,9 +256,10 @@ function genderLabel(gender: Customer['gender']): string {
   return '—';
 }
 
+const STATION_COLORS: Record<Station, string> = { SGN: 'var(--color-secondary)', DAD: '#8E5FD9', HAN: 'var(--color-accent)' };
+
 function StationBadge({ station }: { station: Station }) {
-  const color = station === 'SGN' ? 'var(--color-secondary)' : 'var(--color-accent)';
-  return <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 13, color: '#fff', background: color }}>{station}</span>;
+  return <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 13, color: '#fff', background: STATION_COLORS[station] }}>{station}</span>;
 }
 
 const th: React.CSSProperties = { padding: '10px 12px', fontWeight: 600, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };

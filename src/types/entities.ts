@@ -14,7 +14,7 @@ export type TemplateCategory =
 
 /** ecard_only: chỉ gửi email chúc mừng. gift_visit: gửi email + tặng quà trực tiếp. */
 export type GreetingType = 'ecard_only' | 'gift_visit';
-export type Station = 'SGN' | 'HAN';
+export type Station = 'SGN' | 'DAD' | 'HAN';
 
 interface BaseEntity {
   id: string;
@@ -69,9 +69,16 @@ export interface Template extends BaseEntity {
 
 export interface Signature extends BaseEntity {
   name: string;
+  /** Free-form rich text (from the Outlook-style editor) — may include
+   * formatted text, colors, font sizes, and inline images. */
   htmlContent: string;
   isDefault: boolean;
   versionNumber: number;
+  /** Optional scheduled window (e.g. Tết, Christmas). When today falls
+   * inside [effectiveFrom, effectiveTo] for any signature, that signature
+   * is used automatically instead of the manually-set default. */
+  effectiveFrom?: string; // ISO date "YYYY-MM-DD"
+  effectiveTo?: string; // ISO date "YYYY-MM-DD"
 }
 
 export interface HistoryRecord extends BaseEntity {

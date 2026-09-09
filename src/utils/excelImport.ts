@@ -54,7 +54,7 @@ function mapGender(raw: unknown): Customer['gender'] {
 
 function mapStation(raw: unknown): Station | undefined {
   const v = String(raw ?? '').trim().toUpperCase();
-  if (v === 'SGN' || v === 'HAN') return v;
+  if (v === 'SGN' || v === 'DAD' || v === 'HAN') return v;
   return undefined;
 }
 

@@ -89,6 +89,7 @@ export function CustomerFormModal({ customer, onClose, onSaved }: Props) {
           <Field label="Station">
             <select value={station} onChange={(e) => setStation(e.target.value as Station)} style={inputStyle}>
               <option value="SGN">SGN</option>
+              <option value="DAD">DAD</option>
               <option value="HAN">HAN</option>
             </select>
           </Field>
