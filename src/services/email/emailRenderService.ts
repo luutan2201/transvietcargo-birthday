@@ -7,21 +7,18 @@ import { generatedEmailRepository } from '../../data/repositories/HistoryReposit
 /**
  * Wraps rendered body content in an Outlook-Desktop-safe HTML shell:
  * table layout only, inline CSS only, no flexbox/grid/CSS variables
- * (see 00_CLAUDE_INSTRUCTIONS.md §15).
+ * (see 00_CLAUDE_INSTRUCTIONS.md §15). Left-aligned, full width — this is
+ * a personal birthday email pasted into an Outlook compose window, not a
+ * marketing newsletter, so it should read like normal email text rather
+ * than sit centered in a fixed-width box.
  */
 function wrapOutlookSafeHtml(bodyHtml: string): string {
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background-color:#ffffff;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-  <tr>
-    <td align="center">
-      <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="font-family:${FONTS.emailBody};font-size:${FONTS.emailBodySize};color:#1a1a1a;">
-        <tr><td style="padding:24px;">${bodyHtml}</td></tr>
-      </table>
-    </td>
-  </tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-family:${FONTS.emailBody};font-size:${FONTS.emailBodySize};color:#1a1a1a;">
+  <tr><td align="left" style="text-align:left;">${bodyHtml}</td></tr>
 </table>
 </body>
 </html>`;

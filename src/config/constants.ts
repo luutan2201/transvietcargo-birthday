@@ -47,5 +47,8 @@ export const MIN_APP_RESOLUTION = { width: 1366, height: 768 };
 export const APP_NAME = 'TransViet Cargo Email Campaign Studio';
 
 /** Mandatory CC addresses per the company birthday-email guideline
- * (Quy Trình Handle Sinh Nhật Khách Hàng, mục III.3). */
-export const DEFAULT_EMAIL_CC = ['marketing.cargo@transviet.com', 'cargosales@transviet.com'];
+ * (Quy Trình Handle Sinh Nhật Khách Hàng, mục III.3) — Sales has a
+ * separate mailbox per station rather than one shared address. */
+export function getEmailCcForStation(station: 'SGN' | 'DAD' | 'HAN'): string[] {
+  return ['marketing.cargo@transviet.com', `cargosales.${station.toLowerCase()}@transviet.com`];
+}

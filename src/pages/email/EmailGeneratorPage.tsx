@@ -13,7 +13,7 @@ import { buildPlaceholderMap, renderPlaceholders } from '../../utils/placeholder
 import { blobToDataUrl } from '../../utils/fileUtils';
 import { copyRichHtml } from '../../utils/richClipboard';
 import { openMailto } from '../../utils/mailto';
-import { DEFAULT_EMAIL_CC } from '../../config/constants';
+import { getEmailCcForStation } from '../../config/constants';
 import { CustomerPicker } from '../../components/common/CustomerPicker';
 
 export default function EmailGeneratorPage() {
@@ -117,7 +117,7 @@ export default function EmailGeneratorPage() {
     if (!rendered || !customer) return;
     const richSuccess = await copyRichHtml(rendered.html);
     setCopied(richSuccess ? 'rich' : 'fallback');
-    openMailto({ to: customer.email, cc: DEFAULT_EMAIL_CC, subject: rendered.subject });
+    openMailto({ to: customer.email, cc: getEmailCcForStation(customer.station), subject: rendered.subject });
   }
 
   return (
