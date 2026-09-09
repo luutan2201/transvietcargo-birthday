@@ -22,6 +22,30 @@ Quill.register(SizeStyle, true);
 Quill.register(FontStyle, true);
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+// Quill's picker only shows a font name in the dropdown if a matching
+// ::before rule exists — without this, every custom font whitelist entry
+// falls back to the same generic label (this is what was showing
+// "Sans Serif" repeated for every option instead of the real font names).
+const FONT_CSS_ID = 'rich-text-editor-font-css';
+if (typeof document !== 'undefined' && !document.getElementById(FONT_CSS_ID)) {
+  const style = document.createElement('style');
+  style.id = FONT_CSS_ID;
+  style.textContent = FontStyle.whitelist
+    .map(
+      (font: string) => `
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="${font}"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="${font}"]::before {
+          content: "${font}";
+          font-family: "${font}", sans-serif;
+        }
+        .ql-font-${font.replace(/\s+/g, '-')} { font-family: "${font}", sans-serif; }
+      `
+    )
+    .join('\n');
+  style.textContent += `.ql-snow .ql-picker.ql-font { width: 150px; }`;
+  document.head.appendChild(style);
+}
+
 interface Props {
   value: string; // HTML
   onChange: (html: string) => void;
