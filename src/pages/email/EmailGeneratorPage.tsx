@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Customer, Template } from '../../types/entities';
 import type { Language } from '../../config/constants';
 import { customerService } from '../../services/customer/customerService';
@@ -11,9 +12,12 @@ import { emailGeneratorService, type RenderedEmail } from '../../services/email/
 import { buildPlaceholderMap, renderPlaceholders } from '../../utils/placeholderEngine';
 import { blobToDataUrl } from '../../utils/fileUtils';
 import { copyRichHtml } from '../../utils/richClipboard';
+import { openMailto } from '../../utils/mailto';
+import { DEFAULT_EMAIL_CC } from '../../config/constants';
 import { CustomerPicker } from '../../components/common/CustomerPicker';
 
 export default function EmailGeneratorPage() {
+  const [searchParams] = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [cardTemplates, setCardTemplates] = useState<CardTemplateWithPath[]>([]);
@@ -33,9 +37,21 @@ export default function EmailGeneratorPage() {
   useEffect(() => {
     (async () => {
       setCustomers((await customerService.list({ pageSize: 1000 })).items);
-      setTemplates((await templateService.list()).items);
+      const templateList = (await templateService.list()).items;
+      setTemplates(templateList);
       setCardTemplates((await cardTemplateService.list()).items);
+
+      // Coming from the "Cần xử lý hôm nay" panel — pre-select the
+      // customer and default to a birthday template so it's ready to
+      // Generate immediately.
+      const fromUrl = searchParams.get('customerId');
+      if (fromUrl) {
+        setCustomerId(fromUrl);
+        const birthdayTemplate = templateList.find((t) => t.category === 'birthday');
+        if (birthdayTemplate) setTemplateId(birthdayTemplate.id);
+      }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -97,10 +113,17 @@ export default function EmailGeneratorPage() {
     setCopied(richSuccess ? 'rich' : 'fallback');
   }
 
+  async function handleOpenInOutlook() {
+    if (!rendered || !customer) return;
+    const richSuccess = await copyRichHtml(rendered.html);
+    setCopied(richSuccess ? 'rich' : 'fallback');
+    openMailto({ to: customer.email, cc: DEFAULT_EMAIL_CC, subject: rendered.subject });
+  }
+
   return (
     <div>
       <h1>Email Generator</h1>
-      <p style={{ marginTop: 4, marginBottom: 20 }}>eCard và chữ ký mặc định sẽ tự động đính kèm phía dưới nội dung — chỉ cần copy và dán vào Outlook.</p>
+      <p style={{ marginTop: 4, marginBottom: 20 }}>eCard và chữ ký sẽ tự động đính kèm phía dưới nội dung — bấm "Mở trong Outlook" để tự điền người nhận/CC/tiêu đề, rồi Ctrl+V để dán nội dung.</p>
       <div style={{ display: 'flex', gap: 20 }}>
         <div className="glass-panel" style={{ padding: 22, width: 340 }}>
           <label style={labelStyle}>Customer
@@ -144,12 +167,22 @@ export default function EmailGeneratorPage() {
         <div style={{ flex: 1 }}>
           {rendered ? (
             <div className="glass-panel" style={{ padding: 22 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <strong>Subject: {rendered.subject}</strong>
-                <button onClick={handleCopyHtml} style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: 'var(--color-primary)', color: '#fff', cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap' }}>
-                  {copied === 'rich' ? '✓ Đã copy' : 'Copy để dán vào Outlook'}
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={handleCopyHtml} style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: 'rgba(255,255,255,0.8)', color: 'var(--color-primary)', boxShadow: '0 0 0 1px rgba(20,126,147,0.25)', cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap' }}>
+                    {copied === 'rich' ? '✓ Đã copy' : 'Chỉ Copy nội dung'}
+                  </button>
+                  <button onClick={handleOpenInOutlook} style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: 'var(--color-primary)', color: '#fff', cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap', fontWeight: 600 }}>
+                    ✉ Mở trong Outlook
+                  </button>
+                </div>
               </div>
+              {copied === 'rich' && (
+                <p style={{ fontSize: 13, color: 'var(--color-success)', marginTop: 8, fontWeight: 600 }}>
+                  Nội dung đã sẵn trong bộ nhớ tạm — trong cửa sổ Outlook vừa mở, bấm vào phần thân email rồi nhấn <kbd>Ctrl+V</kbd> để dán, sau đó Send.
+                </p>
+              )}
               {copied === 'fallback' && (
                 <p style={{ fontSize: 12, color: 'var(--color-warning)', marginTop: 6 }}>
                   Trình duyệt không hỗ trợ copy định dạng — đã copy mã HTML thô, dán vào Outlook có thể không giữ được định dạng.

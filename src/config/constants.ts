@@ -45,3 +45,7 @@ export const MAX_SIGNATURE_VERSIONS = 5;
 export const MIN_APP_RESOLUTION = { width: 1366, height: 768 };
 
 export const APP_NAME = 'TransViet Cargo Email Campaign Studio';
+
+/** Mandatory CC addresses per the company birthday-email guideline
+ * (Quy Trình Handle Sinh Nhật Khách Hàng, mục III.3). */
+export const DEFAULT_EMAIL_CC = ['marketing.cargo@transviet.com', 'cargosales@transviet.com'];

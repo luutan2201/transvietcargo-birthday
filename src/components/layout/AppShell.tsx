@@ -3,6 +3,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../services/auth/permissions';
 import { settingsService } from '../../services/settings/settingsService';
+import { customerService } from '../../services/customer/customerService';
+import { getTodaysActionList, isPendingToday } from '../../utils/todaysBirthdays';
 
 const NAV_ITEMS: Array<{ to: string; label: string; icon: string; permission?: Parameters<typeof hasPermission>[1] }> = [
   { to: '/dashboard', label: 'Dashboard', icon: '▦' },
@@ -24,10 +26,18 @@ export function AppShell() {
   const { session, logout } = useAuth();
   const navigate = useNavigate();
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [todaysPendingCount, setTodaysPendingCount] = useState(0);
 
   useEffect(() => {
     settingsService.getAll().then((s) => setLogoDataUrl(s.logoDataUrl));
-  }, []);
+    if (session && hasPermission(session.role, 'customers.view')) {
+      customerService.list({ pageSize: 1000 }).then((r) => {
+        const pending = getTodaysActionList(r.items).filter(isPendingToday);
+        setTodaysPendingCount(pending.length);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id]);
 
   if (!session) return null;
 
@@ -68,7 +78,12 @@ export function AppShell() {
           {visibleNav.map((item) => (
             <NavLink key={item.to} to={item.to} style={({ isActive }) => navLinkStyle(isActive)}>
               <span style={{ width: 20, textAlign: 'center', fontSize: 17 }}>{item.icon}</span>
-              {item.label}
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.to === '/dashboard' && todaysPendingCount > 0 && (
+                <span style={{ background: 'var(--color-danger)', color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '1px 7px' }}>
+                  {todaysPendingCount}
+                </span>
+              )}
             </NavLink>
           ))}
 

@@ -5,6 +5,7 @@ import { customerRepository } from '../../data/repositories/CustomerRepository';
 import { customerService } from '../../services/customer/customerService';
 import { useAuth } from '../../hooks/useAuth';
 import { getTimeBasedGreeting } from '../../utils/greeting';
+import { getTodaysActionList, isPendingToday } from '../../utils/todaysBirthdays';
 import type { Customer } from '../../types/entities';
 
 const QUICK_ACTIONS = [
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ customers: 0, pendingGifts: 0 });
   const [birthdaysThisMonth, setBirthdaysThisMonth] = useState<Customer[]>([]);
+  const [todaysList, setTodaysList] = useState<Customer[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -36,8 +38,12 @@ export default function DashboardPage() {
       const pendingGifts = await customerRepository.findByFilters({ greetingType: 'gift_visit', pendingOnly: true });
       setStats({ customers, pendingGifts: pendingGifts.length });
       setBirthdaysThisMonth(monthList);
+      setTodaysList(getTodaysActionList(monthList));
     })();
   }, []);
+
+  const todaysPending = todaysList.filter(isPendingToday);
+  const isFriday = new Date().getDay() === 5;
 
   const completedCount = birthdaysThisMonth.filter(isCompleted).length;
   const remainingCount = birthdaysThisMonth.length - completedCount;
@@ -63,6 +69,58 @@ export default function DashboardPage() {
           <p style={{ marginTop: 4 }}>{new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</p>
         </div>
       </div>
+
+      {todaysList.length > 0 && (
+        <div className="glass-panel" style={{ padding: 24, marginBottom: 28, border: todaysPending.length > 0 ? '2px solid var(--color-warning)' : undefined }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <h2>🎂 Cần xử lý hôm nay ({todaysPending.length}/{todaysList.length})</h2>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14 }}>
+            {isFriday
+              ? 'Hôm nay Thứ 6 — danh sách bao gồm cả sinh nhật rơi vào Thứ 7 và Chủ Nhật, chuẩn bị trước theo quy trình.'
+              : 'Danh sách khách hàng có sinh nhật hôm nay, đã tự động tổng hợp — bấm để tạo eCard/email sẵn sàng gửi.'}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {todaysList.map((c) => {
+              const pending = isPendingToday(c);
+              return (
+                <div
+                  key={c.id}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '12px 16px', borderRadius: 12,
+                    background: pending ? 'rgba(255,193,7,0.10)' : 'rgba(76,175,80,0.08)',
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>
+                    <strong>{c.fullName}</strong> <span style={{ color: 'var(--text-muted)' }}>({c.company ?? '—'} · {c.station} · {c.greetingType === 'gift_visit' ? '🎁 Gift visit' : '💌 eCard only'})</span>
+                  </span>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {pending ? (
+                      <>
+                        <button
+                          onClick={() => navigate(`/cards?customerId=${c.id}`)}
+                          style={{ padding: '6px 12px', border: 'none', borderRadius: 8, background: '#fff', color: 'var(--color-primary)', cursor: 'pointer', fontSize: 13, boxShadow: '0 0 0 1px rgba(20,126,147,0.2)' }}
+                        >
+                          Tạo eCard
+                        </button>
+                        <button
+                          onClick={() => navigate(`/email?customerId=${c.id}`)}
+                          style={{ padding: '6px 12px', border: 'none', borderRadius: 8, background: 'var(--color-primary)', color: '#fff', cursor: 'pointer', fontSize: 13 }}
+                        >
+                          Soạn & Gửi Email
+                        </button>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1E7B2C' }}>✓ Đã xong</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="glass-panel" style={{ padding: 24, marginBottom: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

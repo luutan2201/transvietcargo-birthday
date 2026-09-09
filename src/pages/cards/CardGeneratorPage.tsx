@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Customer } from '../../types/entities';
 import { customerService } from '../../services/customer/customerService';
 import { cardTemplateService } from '../../services/card/cardTemplateService';
@@ -43,8 +44,9 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 }
 
 function GenerateTab() {
+  const [searchParams] = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customerId, setCustomerId] = useState('');
+  const [customerId, setCustomerId] = useState(searchParams.get('customerId') ?? '');
   const [templates, setTemplates] = useState<CardTemplateWithPath[]>([]);
   const [templateId, setTemplateId] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
