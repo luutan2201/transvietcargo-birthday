@@ -4,6 +4,7 @@ import type { Customer, GreetingType, Station } from '../../types/entities';
 import { customerService } from '../../services/customer/customerService';
 import { CustomerFormModal } from '../../components/customer/CustomerFormModal';
 import { CustomerImportModal } from '../../components/customer/CustomerImportModal';
+import { GiftPhotoModal } from '../../components/customer/GiftPhotoModal';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../services/auth/permissions';
 
@@ -45,6 +46,10 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Customer | null | undefined>(undefined);
   const [showImport, setShowImport] = useState(false);
+  const [viewingGiftPhotos, setViewingGiftPhotos] = useState<Customer | null>(null);
+  const [activeYear, setActiveYear] = useState<number | null>(null);
+
+  useEffect(() => { customerService.getActiveYear().then(setActiveYear); }, []);
 
   const reload = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -108,7 +113,7 @@ export default function CustomersPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Customers</h1>
+        <h1>Customers {activeYear && <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-muted)' }}>— Danh sách năm {activeYear}</span>}</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {canEdit && <button onClick={() => setShowImport(true)} style={secondaryButtonStyle}>Import Excel</button>}
           {canEdit && <button onClick={() => setEditing(null)} style={primaryButtonStyle}>+ New Customer</button>}
@@ -221,6 +226,9 @@ export default function CustomersPage() {
                   </td>
                   {canEdit && (
                     <td style={td} onClick={(e) => e.stopPropagation()}>
+                      {c.greetingType === 'gift_visit' && (
+                        <button onClick={() => setViewingGiftPhotos(c)} style={linkBtn} title="Xem/upload ảnh quà tặng">🎁</button>
+                      )}
                       <button onClick={() => handleDelete(c.id)} style={{ ...linkBtn, color: 'var(--color-danger)' }}>Delete</button>
                     </td>
                   )}
@@ -240,6 +248,9 @@ export default function CustomersPage() {
       )}
       {showImport && (
         <CustomerImportModal onClose={() => setShowImport(false)} onImported={() => { setShowImport(false); reload(); }} />
+      )}
+      {viewingGiftPhotos && (
+        <GiftPhotoModal customer={viewingGiftPhotos} onClose={() => setViewingGiftPhotos(null)} />
       )}
     </div>
   );

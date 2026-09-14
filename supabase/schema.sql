@@ -26,6 +26,11 @@ create table if not exists public.profiles (
 -- ---------------------------------------------------------------------
 create table if not exists public.customers (
   id uuid primary key default gen_random_uuid(),
+  /** Which year's list this customer belongs to. Each year is a fully
+   * independent roster — the same real person may have a separate row
+   * per year (re-imported from that year's Excel file), so old years can
+   * be browsed or bulk-deleted without touching the current year. */
+  year int not null default extract(year from now())::int,
   full_name text not null,
   first_name text not null default '',
   last_name text not null default '',
@@ -48,6 +53,7 @@ create table if not exists public.customers (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
+create index if not exists customers_year_idx on public.customers (year);
 create index if not exists customers_email_idx on public.customers (lower(email));
 create index if not exists customers_birth_date_idx on public.customers (birth_date);
 create index if not exists customers_deleted_idx on public.customers (deleted_at);
@@ -207,6 +213,39 @@ create policy "card_templates_update" on storage.objects for update using (bucke
 
 drop policy if exists "card_templates_delete" on storage.objects;
 create policy "card_templates_delete" on storage.objects for delete using (bucket_id = 'card-templates' and auth.role() = 'authenticated');
+
+-- =====================================================================
+-- gift_photos — proof-of-delivery photos for gift-visit customers,
+-- archived per calendar year so old years can be browsed or bulk-deleted
+-- independently once no longer needed (e.g. delete 2026 once 2028 starts).
+-- =====================================================================
+create table if not exists public.gift_photos (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers(id) on delete cascade,
+  year int not null,
+  image_path text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists gift_photos_customer_idx on public.gift_photos (customer_id);
+create index if not exists gift_photos_year_idx on public.gift_photos (year);
+
+alter table public.gift_photos enable row level security;
+drop policy if exists "authenticated_all" on public.gift_photos;
+create policy "authenticated_all" on public.gift_photos for all
+  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+insert into storage.buckets (id, name, public)
+values ('gift-photos', 'gift-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "gift_photos_read" on storage.objects;
+create policy "gift_photos_read" on storage.objects for select using (bucket_id = 'gift-photos');
+
+drop policy if exists "gift_photos_write" on storage.objects;
+create policy "gift_photos_write" on storage.objects for insert with check (bucket_id = 'gift-photos' and auth.role() = 'authenticated');
+
+drop policy if exists "gift_photos_delete" on storage.objects;
+create policy "gift_photos_delete" on storage.objects for delete using (bucket_id = 'gift-photos' and auth.role() = 'authenticated');
 
 -- =====================================================================
 -- Bootstrap: run this AFTER creating your own login in

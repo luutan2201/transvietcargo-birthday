@@ -1,4 +1,6 @@
 import { customerRepository, type CustomerFilters } from '../../data/repositories/CustomerRepository';
+import { giftPhotoRepository } from '../../data/repositories/GiftPhotoRepository';
+import { settingsService } from '../settings/settingsService';
 import type { Customer, GreetingType, Station } from '../../types/entities';
 import { ValidationError } from '../../data/errors';
 import { createLogger } from '../../utils/logger';
@@ -11,14 +13,61 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
   return { firstName: parts[parts.length - 1], lastName: parts.slice(0, -1).join(' ') };
 }
 
+/** Every method below is automatically scoped to the "active year" (see
+ * settingsService.activeYear) — the whole app only ever sees/creates
+ * customers belonging to the current working year's list. This is what
+ * makes "mỗi năm 1 danh sách hoàn toàn mới" work: advancing the active
+ * year with startNewYear() gives every page an empty slate without
+ * deleting anything, and re-importing an Excel file populates that new
+ * year fresh. Old years remain intact until explicitly wiped with
+ * deleteYearData(). */
 export const customerService = {
-  list: (options?: Parameters<typeof customerRepository.getAll>[0]) => customerRepository.getAll(options),
-  search: (term: string) => customerRepository.search(term),
-  filter: (filters: CustomerFilters) => customerRepository.findByFilters(filters),
+  getActiveYear: async () => (await settingsService.getAll()).activeYear,
+  listYears: () => customerRepository.listYears(),
+
+  async list(options?: Parameters<typeof customerRepository.getAll>[0]) {
+    const year = options?.year ?? (await customerService.getActiveYear());
+    return customerRepository.getAll({ ...options, year });
+  },
+
+  async search(term: string) {
+    return customerRepository.search(term, await customerService.getActiveYear());
+  },
+
+  async filter(filters: CustomerFilters) {
+    return customerRepository.findByFilters({ ...filters, year: filters.year ?? (await customerService.getActiveYear()) });
+  },
+
   getById: (id: string) => customerRepository.getById(id),
 
   /** Convenience helper for "who has a birthday in month X" (1-12). */
-  listByBirthMonth: (birthMonth: number) => customerRepository.findByFilters({ birthMonth }),
+  listByBirthMonth: (birthMonth: number) => customerService.filter({ birthMonth }),
+
+  /** Advances the working year — does not delete or modify any existing
+   * data. All list/create/import calls immediately start scoping to the
+   * new year, which will appear empty until customers are imported into it. */
+  async startNewYear(newYear: number) {
+    await settingsService.set('activeYear', newYear);
+    logger.info('Started new year', { newYear });
+  },
+
+  /** Permanently deletes every customer tagged with the given year, and
+   * (since Postgres cascade only removes gift_photos ROWS, never the
+   * actual Storage files) explicitly cleans up their gift photo files
+   * first so nothing is left orphaned taking up storage. Irreversible. */
+  async deleteYearData(year: number) {
+    const { items: customersInYear } = await customerRepository.getAll({ year, includeDeleted: true, pageSize: 10000 });
+    const customerIds = customersInYear.map((c) => c.id);
+
+    const photos = await giftPhotoRepository.listByCustomerIds(customerIds);
+    if (photos.length > 0) {
+      await giftPhotoRepository.removeStorageObjects(photos.map((p) => p.imagePath));
+    }
+
+    const count = await customerRepository.deleteByYear(year);
+    logger.warn('Deleted year data', { year, customers: count, photos: photos.length });
+    return count;
+  },
 
   async create(input: {
     fullName: string;
@@ -33,10 +82,12 @@ export const customerService = {
     giftSuggestion?: string;
     giftBudget?: number;
   }) {
-    const existing = await customerRepository.findByEmail(input.email);
-    if (existing) throw new ValidationError(`Email "${input.email}" already exists`);
+    const year = await customerService.getActiveYear();
+    const existing = await customerRepository.findByEmail(input.email, year);
+    if (existing) throw new ValidationError(`Email "${input.email}" already exists in the ${year} list`);
     const { firstName, lastName } = splitName(input.fullName);
     return customerRepository.create({
+      year,
       fullName: input.fullName,
       firstName,
       lastName,
@@ -62,17 +113,18 @@ export const customerService = {
   toggleEcardSent: (id: string, value: boolean) => customerRepository.update(id, { ecardSent: value }),
   toggleGiftGiven: (id: string, value: boolean) => customerRepository.update(id, { giftGiven: value }),
 
-  /** Bulk-imports rows from the Excel/CSV parser. If a customer with the
-   * same email already exists, their record is UPDATED with the file's
-   * data (birthDate, station, type, gift suggestion, etc.) instead of
-   * being skipped — otherwise re-importing a corrected spreadsheet would
-   * silently fail to fix customers created by an earlier, broken import. */
+  /** Bulk-imports rows from the Excel/CSV parser into the CURRENT active
+   * year's list. Within that year, a matching email is updated in place;
+   * across years, importing the same email again always creates a fresh
+   * row for the new year — this is what gives each year an independent,
+   * from-scratch roster even for repeat customers. */
   async importRows(rows: Array<import('../../utils/excelImport').ImportRow>) {
+    const year = await customerService.getActiveYear();
     const results = { imported: 0, updated: 0, skipped: 0, skippedEmails: [] as string[] };
     for (const row of rows) {
       const { firstName, lastName } = splitName(row.fullName);
       const greetingType = row.greetingType ?? 'ecard_only';
-      const existing = await customerRepository.findByEmail(row.email);
+      const existing = await customerRepository.findByEmail(row.email, year);
 
       if (existing) {
         await customerRepository.update(existing.id, {
@@ -93,6 +145,7 @@ export const customerService = {
       }
 
       await customerRepository.create({
+        year,
         fullName: row.fullName,
         firstName,
         lastName,
@@ -112,7 +165,7 @@ export const customerService = {
       });
       results.imported++;
     }
-    logger.info('Import finished', results);
+    logger.info('Import finished', { year, ...results });
     return results;
   },
 };

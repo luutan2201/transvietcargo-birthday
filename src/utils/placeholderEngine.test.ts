@@ -3,7 +3,7 @@ import { buildPlaceholderMap, renderPlaceholders } from './placeholderEngine';
 import type { Customer } from '../types/entities';
 
 const customer: Customer = {
-  id: '1', createdAt: '', updatedAt: '',
+  id: '1', year: 2026, createdAt: '', updatedAt: '',
   fullName: 'Nguyễn Văn A', firstName: 'A', lastName: 'Nguyễn Văn',
   gender: 'male', email: 'a@transviet.com', company: 'TransViet', position: 'Manager',
   language: 'vi', status: 'active',

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { customerRepository } from '../../data/repositories/CustomerRepository';
 import { customerService } from '../../services/customer/customerService';
 import { useAuth } from '../../hooks/useAuth';
 import { getTimeBasedGreeting } from '../../utils/greeting';
@@ -32,10 +31,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const customers = await customerRepository.count();
+      const { total: customers } = await customerService.list({ pageSize: 1 });
       const currentMonth = new Date().getMonth() + 1;
       const monthList = await customerService.listByBirthMonth(currentMonth);
-      const pendingGifts = await customerRepository.findByFilters({ greetingType: 'gift_visit', pendingOnly: true });
+      const pendingGifts = await customerService.filter({ greetingType: 'gift_visit', pendingOnly: true });
       setStats({ customers, pendingGifts: pendingGifts.length });
       setBirthdaysThisMonth(monthList);
       setTodaysList(getTodaysActionList(monthList));

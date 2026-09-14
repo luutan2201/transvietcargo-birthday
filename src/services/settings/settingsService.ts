@@ -5,9 +5,20 @@ export interface AppSettings {
   defaultLanguage: 'vi' | 'en';
   historyRetentionMonths: number;
   logoDataUrl: string | null;
+  /** Which year's customer list is currently the "live" working set —
+   * every page (Customers, Dashboard, Calendar, Email/Card Generator)
+   * only shows/creates customers tagged with this year. Advancing it via
+   * "Bắt đầu năm mới" gives a clean slate without deleting old years. */
+  activeYear: number;
 }
 
-const DEFAULTS: AppSettings = { theme: 'light', defaultLanguage: 'vi', historyRetentionMonths: 12, logoDataUrl: null };
+const DEFAULTS: AppSettings = {
+  theme: 'light',
+  defaultLanguage: 'vi',
+  historyRetentionMonths: 12,
+  logoDataUrl: null,
+  activeYear: new Date().getFullYear(),
+};
 
 export const settingsService = {
   async getAll(): Promise<AppSettings> {

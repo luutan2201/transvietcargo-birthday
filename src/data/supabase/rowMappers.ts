@@ -1,4 +1,4 @@
-import type { Customer, CardTemplate, Template, Signature, HistoryRecord, GreetingType, Station } from '../../types/entities';
+import type { Customer, CardTemplate, Template, Signature, HistoryRecord, GreetingType, Station, GiftPhoto } from '../../types/entities';
 
 /** Postgres uses snake_case; the app's TS types use camelCase. These
  * mappers translate rows in both directions so the rest of the app never
@@ -6,6 +6,7 @@ import type { Customer, CardTemplate, Template, Signature, HistoryRecord, Greeti
 
 export interface CustomerRow {
   id: string;
+  year: number;
   full_name: string;
   first_name: string;
   last_name: string;
@@ -32,6 +33,7 @@ export interface CustomerRow {
 export function customerFromRow(r: CustomerRow): Customer {
   return {
     id: r.id,
+    year: r.year,
     fullName: r.full_name,
     firstName: r.first_name,
     lastName: r.last_name,
@@ -58,6 +60,7 @@ export function customerFromRow(r: CustomerRow): Customer {
 
 export function customerToRow(c: Partial<Customer>): Partial<CustomerRow> {
   const row: Partial<CustomerRow> = {};
+  if (c.year !== undefined) row.year = c.year;
   if (c.fullName !== undefined) row.full_name = c.fullName;
   if (c.firstName !== undefined) row.first_name = c.firstName;
   if (c.lastName !== undefined) row.last_name = c.lastName;
@@ -190,5 +193,23 @@ export function historyFromRow(r: HistoryRow): HistoryRecord {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     deletedAt: r.deleted_at,
+  };
+}
+
+export interface GiftPhotoRow {
+  id: string;
+  customer_id: string;
+  year: number;
+  image_path: string;
+  created_at: string;
+}
+
+export function giftPhotoFromRow(r: GiftPhotoRow): GiftPhoto {
+  return {
+    id: r.id,
+    customerId: r.customer_id,
+    year: r.year,
+    imagePath: r.image_path,
+    createdAt: r.created_at,
   };
 }

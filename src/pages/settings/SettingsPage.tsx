@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { settingsService, type AppSettings } from '../../services/settings/settingsService';
 import { backupService } from '../../services/backup/backupService';
 import { signatureService } from '../../services/signature/signatureService';
+import { customerService } from '../../services/customer/customerService';
 import { readFileAsDataUrl } from '../../utils/fileUtils';
 import { RichTextEditor } from '../../components/common/RichTextEditor';
 import type { Signature } from '../../types/entities';
@@ -11,6 +12,12 @@ export default function SettingsPage() {
   const [signatures, setSignatures] = useState<Signature[]>([]);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+  const [yearActionMsg, setYearActionMsg] = useState<string | null>(null);
+  const [yearActionError, setYearActionError] = useState<string | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [activeYear, setActiveYear] = useState<number>(new Date().getFullYear());
+  const [newYearInput, setNewYearInput] = useState('');
+  const [yearToDelete, setYearToDelete] = useState('');
   const [logoError, setLogoError] = useState<string | null>(null);
 
   const [editingSig, setEditingSig] = useState<Signature | null | undefined>(undefined);
@@ -23,8 +30,11 @@ export default function SettingsPage() {
   const [savingSig, setSavingSig] = useState(false);
 
   async function reload() {
-    setSettings(await settingsService.getAll());
+    const s = await settingsService.getAll();
+    setSettings(s);
+    setActiveYear(s.activeYear);
     setSignatures((await signatureService.list()).items);
+    setAvailableYears(await customerService.listYears());
   }
   useEffect(() => { reload(); }, []);
 
@@ -60,6 +70,42 @@ export default function SettingsPage() {
     if (!file) return;
     const counts = await backupService.restoreFromJson(file);
     setRestoreMsg(`Restored: ${Object.entries(counts).map(([k, v]) => `${k}=${v}`).join(', ')}`);
+  }
+
+  async function handleStartNewYear() {
+    const newYear = Number(newYearInput);
+    if (!newYear || newYear < 2000) { setYearActionError('Nhập đúng năm mới (VD: 2027).'); return; }
+    if (newYear === activeYear) { setYearActionError(`Năm ${newYear} đang là năm hoạt động rồi.`); return; }
+    const confirmText = prompt(
+      `Chuyển toàn bộ hệ thống sang làm việc với năm ${newYear} — danh sách khách hàng sẽ TRỐNG HOÀN TOÀN cho tới khi bạn import Excel mới. Dữ liệu của ${activeYear} vẫn được giữ nguyên, không mất.\n\nGõ chính xác "${newYear}" để xác nhận:`
+    );
+    if (confirmText !== String(newYear)) return;
+    setYearActionError(null);
+    try {
+      await customerService.startNewYear(newYear);
+      setYearActionMsg(`Đã chuyển sang năm ${newYear} — vào Customers → Import Excel để nạp danh sách khách hàng mới.`);
+      setNewYearInput('');
+      reload();
+    } catch (err) {
+      setYearActionError(err instanceof Error ? err.message : 'Failed to start new year');
+    }
+  }
+
+  async function handleDeleteYear() {
+    const year = Number(yearToDelete);
+    if (!year || year < 2000) { setYearActionError('Nhập đúng năm cần xoá (VD: 2026).'); return; }
+    if (year === activeYear) { setYearActionError(`Không thể xoá năm ${year} vì đây đang là năm hoạt động hiện tại.`); return; }
+    const confirmText = prompt(`Thao tác này sẽ xoá VĨNH VIỄN toàn bộ khách hàng và ảnh quà tặng của năm ${year}. Không thể hoàn tác.\n\nGõ chính xác năm "${year}" để xác nhận:`);
+    if (confirmText !== String(year)) return;
+    setYearActionError(null);
+    try {
+      const count = await customerService.deleteYearData(year);
+      setYearActionMsg(`Đã xoá toàn bộ ${count} khách hàng (kèm ảnh quà tặng) của năm ${year}.`);
+      setYearToDelete('');
+      reload();
+    } catch (err) {
+      setYearActionError(err instanceof Error ? err.message : 'Failed to delete year data');
+    }
   }
 
   function openNewSignature() {
@@ -208,6 +254,45 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="glass-panel" style={{ padding: 22, marginBottom: 18 }}>
+        <h3 style={{ marginBottom: 12 }}>Quản lý danh sách theo năm</h3>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+          Mỗi năm là 1 danh sách khách hàng hoàn toàn riêng biệt (tên, email, ngày sinh, trạng thái gửi, ảnh quà tặng...).
+          Năm đang hoạt động hiện tại: <strong>{activeYear}</strong> — mọi thao tác (xem, thêm, import Excel) đều áp dụng cho đúng năm này.
+          {availableYears.length > 0 && <> Các năm hiện có dữ liệu: <strong>{availableYears.join(', ')}</strong>.</>}
+        </p>
+
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 14, fontWeight: 600, display: 'block', marginBottom: 6 }}>Bắt đầu danh sách năm mới</label>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
+            Chuyển toàn bộ hệ thống sang làm việc với 1 năm mới (VD: 2027) — danh sách sẽ trống hoàn toàn, không có khách hàng nào.
+            Dữ liệu của {activeYear} vẫn được giữ nguyên, không mất. Sau khi chuyển, vào Customers → Import Excel để nạp danh sách khách hàng mới cho năm đó.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input type="number" placeholder={`VD: ${activeYear + 1}`} value={newYearInput} onChange={(e) => setNewYearInput(e.target.value)} style={{ width: 140 }} />
+            <button onClick={handleStartNewYear} style={{ padding: '10px 16px', border: 'none', borderRadius: 10, background: 'var(--color-warning)', color: '#5c4400', cursor: 'pointer', fontWeight: 600 }}>
+              Bắt đầu năm mới
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label style={{ fontSize: 14, fontWeight: 600, display: 'block', marginBottom: 6 }}>Xoá TOÀN BỘ dữ liệu của 1 năm cũ</label>
+          <p style={{ fontSize: 13, color: 'var(--color-danger)', marginBottom: 8 }}>
+            ⚠ Xoá vĩnh viễn TẤT CẢ khách hàng, ảnh quà tặng của đúng năm được nhập — không chỉ ảnh. Dùng khi năm đó đã quá cũ, không cần lưu nữa (VD: xoá 2026 khi đã sang 2028). Không thể hoàn tác.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input type="number" placeholder="VD: 2026" value={yearToDelete} onChange={(e) => setYearToDelete(e.target.value)} style={{ width: 140 }} />
+            <button onClick={handleDeleteYear} style={{ padding: '10px 16px', border: 'none', borderRadius: 10, background: 'var(--color-danger)', color: '#fff', cursor: 'pointer' }}>
+              Xoá toàn bộ dữ liệu năm này
+            </button>
+          </div>
+        </div>
+
+        {yearActionMsg && <p style={{ fontSize: 13, color: 'var(--color-success)', marginTop: 12 }}>{yearActionMsg}</p>}
+        {yearActionError && <p style={{ fontSize: 13, color: 'var(--color-danger)', marginTop: 12 }}>{yearActionError}</p>}
       </div>
 
       <div className="glass-panel" style={{ padding: 22 }}>

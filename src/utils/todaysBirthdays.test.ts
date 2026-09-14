@@ -5,6 +5,7 @@ import type { Customer } from '../types/entities';
 function makeCustomer(overrides: Partial<Customer>): Customer {
   return {
     id: overrides.id ?? Math.random().toString(),
+    year: 2026,
     createdAt: '', updatedAt: '',
     fullName: 'Test', firstName: 'Test', lastName: '',
     gender: 'unknown', email: 'a@test.com', language: 'vi', status: 'active',

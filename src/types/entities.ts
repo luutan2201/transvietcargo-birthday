@@ -24,6 +24,9 @@ interface BaseEntity {
 }
 
 export interface Customer extends BaseEntity {
+  /** Which year's list this customer belongs to — see the schema comment
+   * on public.customers.year for why this exists. */
+  year: number;
   fullName: string;
   firstName: string;
   lastName: string;
@@ -134,6 +137,18 @@ export interface CardTemplate extends BaseEntity {
     };
   };
   isDefault: boolean;
+}
+
+/** A proof-of-delivery photo for a gift-visit customer, archived under
+ * the calendar year it was given. A customer can have one per year (or
+ * more, if re-uploaded) — browsable/deletable per year independently of
+ * the customer's live tracking status. */
+export interface GiftPhoto {
+  id: string;
+  customerId: string;
+  year: number;
+  imagePath: string;
+  createdAt: string;
 }
 
 /** A logged-in team member. Backed by Supabase Auth (auth.users) + a

@@ -1,7 +1,7 @@
 import { supabase } from '../../lib/supabaseClient';
 import { createLogger } from '../../utils/logger';
 
-const BACKUP_TABLES = ['customers', 'templates', 'signatures', 'history', 'settings', 'card_templates'] as const;
+const BACKUP_TABLES = ['customers', 'templates', 'signatures', 'history', 'settings', 'card_templates', 'gift_photos'] as const;
 const logger = createLogger('BackupService');
 
 export const backupService = {

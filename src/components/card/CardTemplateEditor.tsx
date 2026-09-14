@@ -21,7 +21,7 @@ const ALIGN_OPTIONS: Array<{ value: TextAlign; label: string }> = [
 ];
 
 const SAMPLE_CUSTOMER: Customer = {
-  id: 'sample', createdAt: '', updatedAt: '',
+  id: 'sample', year: new Date().getFullYear(), createdAt: '', updatedAt: '',
   fullName: 'Lưu Cảnh Tân', firstName: 'Tân', lastName: 'Lưu Cảnh',
   gender: 'male', email: 'sample@transviet.com', language: 'vi', status: 'active',
   greetingType: 'ecard_only', station: 'SGN', ecardSent: false, giftGiven: false,
