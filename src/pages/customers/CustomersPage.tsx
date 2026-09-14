@@ -160,15 +160,16 @@ export default function CustomersPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15, tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: '9%' }} />
-            <col style={{ width: '12%' }} />
+            <col style={{ width: '11%' }} />
             <col style={{ width: '5%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '13%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '12%' }} />
             <col style={{ width: '6%' }} />
             <col style={{ width: '5%' }} />
             <col style={{ width: '8%' }} />
-            <col style={{ width: '11%' }} />
-            <col style={{ width: '7%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '6%' }} />
+            <col style={{ width: '5%' }} />
             <col style={{ width: '4%' }} />
             <col style={{ width: '4%' }} />
             <col style={{ width: '6%' }} />
@@ -185,16 +186,17 @@ export default function CustomersPage() {
               <th style={th}>Type</th>
               <th style={th}>Gift suggestion</th>
               <th style={th}>Budget</th>
-              <th style={th}>eCard</th>
-              <th style={th}>Gift</th>
+              <th style={{ ...th, textAlign: 'center' }}>Ảnh</th>
+              <th style={{ ...th, textAlign: 'center' }}>eCard</th>
+              <th style={{ ...th, textAlign: 'center' }}>Gift</th>
               {canEdit && <th style={th}></th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td style={td} colSpan={13}>Loading…</td></tr>
+              <tr><td style={td} colSpan={14}>Loading…</td></tr>
             ) : customers.length === 0 ? (
-              <tr><td style={td} colSpan={13}>No customers found.</td></tr>
+              <tr><td style={td} colSpan={14}>No customers found.</td></tr>
             ) : (
               customers.map((c) => (
                 <tr
@@ -216,19 +218,23 @@ export default function CustomersPage() {
                     {c.greetingType === 'gift_visit' ? (c.giftSuggestion || '—') : ''}
                   </td>
                   <td style={ellipsisTd}>{c.greetingType === 'gift_visit' ? formatMoney(c.giftBudget) : ''}</td>
-                  <td style={td} onClick={(e) => e.stopPropagation()}>
+                  <td style={{ ...td, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                    {c.greetingType === 'gift_visit' ? (
+                      <button onClick={() => setViewingGiftPhotos(c)} style={eyeButtonStyle} title="Xem/upload ảnh quà tặng">👁</button>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>—</span>
+                    )}
+                  </td>
+                  <td style={{ ...td, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={c.ecardSent} disabled={!canEdit} onChange={() => handleToggleEcard(c)} />
                   </td>
-                  <td style={td} onClick={(e) => e.stopPropagation()}>
+                  <td style={{ ...td, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                     {c.greetingType === 'gift_visit' && (
                       <input type="checkbox" checked={c.giftGiven} disabled={!canEdit} onChange={() => handleToggleGift(c)} />
                     )}
                   </td>
                   {canEdit && (
-                    <td style={td} onClick={(e) => e.stopPropagation()}>
-                      {c.greetingType === 'gift_visit' && (
-                        <button onClick={() => setViewingGiftPhotos(c)} style={linkBtn} title="Xem/upload ảnh quà tặng">🎁</button>
-                      )}
+                    <td style={{ ...td, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => handleDelete(c.id)} style={{ ...linkBtn, color: 'var(--color-danger)' }}>Delete</button>
                     </td>
                   )}
@@ -277,6 +283,10 @@ const th: React.CSSProperties = { padding: '10px 12px', fontWeight: 600, color: 
 const td: React.CSSProperties = { padding: '10px 12px' };
 const ellipsisTd: React.CSSProperties = { padding: '10px 12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 const linkBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--color-secondary)', cursor: 'pointer', marginRight: 8, padding: 0, fontSize: 15 };
+const eyeButtonStyle: React.CSSProperties = {
+  width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer',
+  background: 'rgba(20,126,147,0.10)', fontSize: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+};
 const primaryButtonStyle: React.CSSProperties = { padding: '10px 16px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer' };
 const secondaryButtonStyle: React.CSSProperties = { padding: '10px 16px', background: '#eee', color: '#333', border: 'none', borderRadius: 10, cursor: 'pointer' };
 const selectStyle: React.CSSProperties = { padding: 10, borderRadius: 10, border: '1px solid #d0d7e2' };

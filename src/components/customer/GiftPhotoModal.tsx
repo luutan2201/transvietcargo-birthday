@@ -13,6 +13,7 @@ export function GiftPhotoModal({ customer, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   async function reload() {
     setLoading(true);
@@ -56,20 +57,20 @@ export function GiftPhotoModal({ customer, onClose }: Props) {
 
   return (
     <div style={overlayStyle}>
-      <div className="glass-panel" style={{ padding: 24, width: 560, maxHeight: '85vh', overflowY: 'auto' }}>
+      <div className="glass-panel" style={{ padding: 26, width: 760, maxWidth: '92vw', maxHeight: '88vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <h2 style={{ margin: 0, color: 'var(--color-primary)' }}>🎁 Ảnh quà tặng — {customer.fullName}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--text-muted)', lineHeight: 1 }}>×</button>
         </div>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{customer.company ?? '—'} · {customer.station}</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>{customer.company ?? '—'} · {customer.station}</p>
 
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 24, padding: 16, background: 'rgba(20,126,147,0.05)', borderRadius: 12 }}>
           <label style={{ fontSize: 14, fontWeight: 600, display: 'block', marginBottom: 8 }}>
             Upload ảnh quà tặng năm {currentYear}
           </label>
           <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} />
-          {uploading && <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Đang nén và tải ảnh lên…</p>}
-          {error && <p style={{ fontSize: 13, color: 'var(--color-danger)' }}>{error}</p>}
+          {uploading && <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>Đang nén và tải ảnh lên…</p>}
+          {error && <p style={{ fontSize: 13, color: 'var(--color-danger)', marginTop: 6 }}>{error}</p>}
         </div>
 
         {loading ? (
@@ -78,15 +79,25 @@ export function GiftPhotoModal({ customer, onClose }: Props) {
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Chưa có ảnh quà tặng nào được lưu.</p>
         ) : (
           years.map((year) => (
-            <div key={year} style={{ marginBottom: 20 }}>
-              <h3 style={{ fontSize: 15, marginBottom: 8 }}>Năm {year}</h3>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div key={year} style={{ marginBottom: 24 }}>
+              <h3 style={{ fontSize: 16, marginBottom: 10 }}>Năm {year}</h3>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 {byYear[year].map((p) => (
-                  <div key={p.id} style={{ width: 140 }}>
-                    <img src={urls[p.id]} alt={`Quà tặng năm ${p.year}`} style={{ width: '100%', borderRadius: 10, border: '1px solid rgba(20,126,147,0.15)' }} />
-                    <button onClick={() => handleDelete(p)} style={{ fontSize: 12, color: 'var(--color-danger)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4, padding: 0 }}>
-                      Xoá
-                    </button>
+                  <div key={p.id} style={{ width: 260 }}>
+                    <img
+                      src={urls[p.id]}
+                      alt={`Quà tặng năm ${p.year}`}
+                      onClick={() => setLightboxUrl(urls[p.id])}
+                      style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 12, border: '1px solid rgba(20,126,147,0.15)', cursor: 'zoom-in', display: 'block' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                      <button onClick={() => setLightboxUrl(urls[p.id])} style={{ fontSize: 13, color: 'var(--color-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        Xem lớn
+                      </button>
+                      <button onClick={() => handleDelete(p)} style={{ fontSize: 13, color: 'var(--color-danger)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        Xoá
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -98,8 +109,17 @@ export function GiftPhotoModal({ customer, onClose }: Props) {
           <button onClick={onClose} style={{ padding: '8px 16px', border: 'none', borderRadius: 10, background: '#eee', cursor: 'pointer' }}>Đóng</button>
         </div>
       </div>
+
+      {lightboxUrl && (
+        <div style={lightboxOverlayStyle} onClick={() => setLightboxUrl(null)}>
+          <button onClick={() => setLightboxUrl(null)} style={lightboxCloseStyle}>×</button>
+          <img src={lightboxUrl} alt="Ảnh quà tặng phóng to" style={{ maxWidth: '92vw', maxHeight: '92vh', borderRadius: 8, boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }} />
+        </div>
+      )}
     </div>
   );
 }
 
 const overlayStyle: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 };
+const lightboxOverlayStyle: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, cursor: 'zoom-out' };
+const lightboxCloseStyle: React.CSSProperties = { position: 'fixed', top: 20, right: 28, background: 'none', border: 'none', color: '#fff', fontSize: 36, cursor: 'pointer', lineHeight: 1 };
