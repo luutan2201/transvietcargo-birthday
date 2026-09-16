@@ -1,6 +1,5 @@
 import { customerRepository, type CustomerFilters } from '../../data/repositories/CustomerRepository';
 import { giftPhotoRepository } from '../../data/repositories/GiftPhotoRepository';
-import { settingsService } from '../settings/settingsService';
 import type { Customer, GreetingType, Station } from '../../types/entities';
 import { ValidationError } from '../../data/errors';
 import { createLogger } from '../../utils/logger';
@@ -13,43 +12,34 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
   return { firstName: parts[parts.length - 1], lastName: parts.slice(0, -1).join(' ') };
 }
 
-/** Every method below is automatically scoped to the "active year" (see
- * settingsService.activeYear) — the whole app only ever sees/creates
- * customers belonging to the current working year's list. This is what
- * makes "mỗi năm 1 danh sách hoàn toàn mới" work: advancing the active
- * year with startNewYear() gives every page an empty slate without
- * deleting anything, and re-importing an Excel file populates that new
- * year fresh. Old years remain intact until explicitly wiped with
- * deleteYearData(). */
+/** "Which year" defaults to the REAL current calendar year everywhere
+ * (Dashboard, Calendar, Email/Card Generator) unless a caller explicitly
+ * asks for a different one — there is no separate "active year" toggle
+ * that could silently switch what everyone sees. The Customers page is
+ * the one place with an explicit year filter, letting an admin browse an
+ * old year or prep next year's list early (e.g. import 2027 data in
+ * December 2026) without changing what the rest of the app shows by
+ * default while today is still in 2026. */
+export function currentRealYear(): number {
+  return new Date().getFullYear();
+}
+
 export const customerService = {
-  getActiveYear: async () => (await settingsService.getAll()).activeYear,
   listYears: () => customerRepository.listYears(),
 
-  async list(options?: Parameters<typeof customerRepository.getAll>[0]) {
-    const year = options?.year ?? (await customerService.getActiveYear());
-    return customerRepository.getAll({ ...options, year });
-  },
+  list: (options?: Parameters<typeof customerRepository.getAll>[0]) =>
+    customerRepository.getAll({ ...options, year: options?.year ?? currentRealYear() }),
 
-  async search(term: string) {
-    return customerRepository.search(term, await customerService.getActiveYear());
-  },
+  search: (term: string, year: number = currentRealYear()) => customerRepository.search(term, year),
 
-  async filter(filters: CustomerFilters) {
-    return customerRepository.findByFilters({ ...filters, year: filters.year ?? (await customerService.getActiveYear()) });
-  },
+  filter: (filters: CustomerFilters) =>
+    customerRepository.findByFilters({ ...filters, year: filters.year ?? currentRealYear() }),
 
   getById: (id: string) => customerRepository.getById(id),
 
-  /** Convenience helper for "who has a birthday in month X" (1-12). */
-  listByBirthMonth: (birthMonth: number) => customerService.filter({ birthMonth }),
-
-  /** Advances the working year — does not delete or modify any existing
-   * data. All list/create/import calls immediately start scoping to the
-   * new year, which will appear empty until customers are imported into it. */
-  async startNewYear(newYear: number) {
-    await settingsService.set('activeYear', newYear);
-    logger.info('Started new year', { newYear });
-  },
+  /** Convenience helper for "who has a birthday in month X" (1-12), for
+   * the given year (defaults to the real current year). */
+  listByBirthMonth: (birthMonth: number, year?: number) => customerService.filter({ birthMonth, year }),
 
   /** Permanently deletes every customer tagged with the given year, and
    * (since Postgres cascade only removes gift_photos ROWS, never the
@@ -81,8 +71,9 @@ export const customerService = {
     station: Station;
     giftSuggestion?: string;
     giftBudget?: number;
+    year?: number;
   }) {
-    const year = await customerService.getActiveYear();
+    const year = input.year ?? currentRealYear();
     const existing = await customerRepository.findByEmail(input.email, year);
     if (existing) throw new ValidationError(`Email "${input.email}" already exists in the ${year} list`);
     const { firstName, lastName } = splitName(input.fullName);
@@ -113,13 +104,12 @@ export const customerService = {
   toggleEcardSent: (id: string, value: boolean) => customerRepository.update(id, { ecardSent: value }),
   toggleGiftGiven: (id: string, value: boolean) => customerRepository.update(id, { giftGiven: value }),
 
-  /** Bulk-imports rows from the Excel/CSV parser into the CURRENT active
-   * year's list. Within that year, a matching email is updated in place;
-   * across years, importing the same email again always creates a fresh
-   * row for the new year — this is what gives each year an independent,
+  /** Bulk-imports rows from the Excel/CSV parser into the given year's
+   * list (defaults to the real current year). Within that year, a
+   * matching email is updated in place; a different year always creates
+   * a fresh row — this is what gives each year an independent,
    * from-scratch roster even for repeat customers. */
-  async importRows(rows: Array<import('../../utils/excelImport').ImportRow>) {
-    const year = await customerService.getActiveYear();
+  async importRows(rows: Array<import('../../utils/excelImport').ImportRow>, year: number = currentRealYear()) {
     const results = { imported: 0, updated: 0, skipped: 0, skippedEmails: [] as string[] };
     for (const row of rows) {
       const { firstName, lastName } = splitName(row.fullName);

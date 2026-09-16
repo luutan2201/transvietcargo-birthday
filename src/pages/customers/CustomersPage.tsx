@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Customer, GreetingType, Station } from '../../types/entities';
-import { customerService } from '../../services/customer/customerService';
+import { customerService, currentRealYear } from '../../services/customer/customerService';
 import { CustomerFormModal } from '../../components/customer/CustomerFormModal';
 import { CustomerImportModal } from '../../components/customer/CustomerImportModal';
 import { GiftPhotoModal } from '../../components/customer/GiftPhotoModal';
@@ -47,9 +47,19 @@ export default function CustomersPage() {
   const [editing, setEditing] = useState<Customer | null | undefined>(undefined);
   const [showImport, setShowImport] = useState(false);
   const [viewingGiftPhotos, setViewingGiftPhotos] = useState<Customer | null>(null);
-  const [activeYear, setActiveYear] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(currentRealYear());
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  useEffect(() => { customerService.getActiveYear().then(setActiveYear); }, []);
+  useEffect(() => {
+    customerService.listYears().then((years) => {
+      setAvailableYears(years);
+      // If the real current year has no data yet, fall back to the most
+      // recent year that does, so the page doesn't just look empty by default.
+      if (years.length > 0 && !years.includes(currentRealYear())) {
+        setSelectedYear(years[0]);
+      }
+    });
+  }, []);
 
   const reload = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -64,20 +74,21 @@ export default function CustomersPage() {
     let results: Customer[];
     const hasFilters = birthMonth || station || greetingType || pendingOnly;
     if (search) {
-      results = await customerService.search(search);
+      results = await customerService.search(search, selectedYear);
     } else if (hasFilters) {
       results = await customerService.filter({
         birthMonth: birthMonth || undefined,
         station: station || undefined,
         greetingType: greetingType || undefined,
         pendingOnly: pendingOnly || undefined,
+        year: selectedYear,
       });
     } else {
-      results = (await customerService.list({ pageSize: 1000 })).items;
+      results = (await customerService.list({ pageSize: 1000, year: selectedYear })).items;
     }
     setCustomers(sortByBirthday(results));
     if (!silent) setLoading(false);
-  }, [search, birthMonth, station, greetingType, pendingOnly, focusedCustomerId]);
+  }, [search, birthMonth, station, greetingType, pendingOnly, focusedCustomerId, selectedYear]);
 
   useEffect(() => {
     const t = setTimeout(() => reload(), 250); // debounce
@@ -113,12 +124,19 @@ export default function CustomersPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Customers {activeYear && <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-muted)' }}>— Danh sách năm {activeYear}</span>}</h1>
+        <h1>Customers <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-muted)' }}>— Danh sách năm {selectedYear}</span></h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {canEdit && <button onClick={() => setShowImport(true)} style={secondaryButtonStyle}>Import Excel</button>}
           {canEdit && <button onClick={() => setEditing(null)} style={primaryButtonStyle}>+ New Customer</button>}
         </div>
       </div>
+
+      {selectedYear !== currentRealYear() && (
+        <div className="glass-panel" style={{ padding: 12, marginTop: 12, background: 'rgba(255,193,7,0.10)', fontSize: 14 }}>
+          ⚠ Bạn đang xem danh sách năm <strong>{selectedYear}</strong>, không phải năm hiện tại ({currentRealYear()}).
+          Thêm/sửa/import ở đây sẽ áp dụng cho đúng năm {selectedYear}.
+        </div>
+      )}
 
       {focusedCustomerId ? (
         <div className="glass-panel" style={{ padding: 12, margin: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -127,6 +145,11 @@ export default function CustomersPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '16px 0' }}>
+          <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} style={{ ...selectStyle, fontWeight: 600 }}>
+            {(availableYears.includes(currentRealYear()) ? availableYears : [currentRealYear(), ...availableYears]).map((y) => (
+              <option key={y} value={y}>{y === currentRealYear() ? `${y} (hiện tại)` : y}</option>
+            ))}
+          </select>
           <input
             placeholder="Search by name, email, company…"
             value={search}
@@ -248,12 +271,17 @@ export default function CustomersPage() {
       {editing !== undefined && (
         <CustomerFormModal
           customer={editing}
+          year={selectedYear}
           onClose={() => setEditing(undefined)}
-          onSaved={() => { setEditing(undefined); reload(true); }}
+          onSaved={() => { setEditing(undefined); reload(true); customerService.listYears().then(setAvailableYears); }}
         />
       )}
       {showImport && (
-        <CustomerImportModal onClose={() => setShowImport(false)} onImported={() => { setShowImport(false); reload(); }} />
+        <CustomerImportModal
+          year={selectedYear}
+          onClose={() => setShowImport(false)}
+          onImported={() => { setShowImport(false); reload(); customerService.listYears().then(setAvailableYears); }}
+        />
       )}
       {viewingGiftPhotos && (
         <GiftPhotoModal customer={viewingGiftPhotos} onClose={() => setViewingGiftPhotos(null)} />

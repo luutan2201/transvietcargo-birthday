@@ -4,11 +4,14 @@ import { customerService } from '../../services/customer/customerService';
 
 interface Props {
   customer?: Customer | null;
+  /** Which year new customers should be created into. Ignored when
+   * editing an existing customer (their year never changes here). */
+  year: number;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function CustomerFormModal({ customer, onClose, onSaved }: Props) {
+export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
   const [fullName, setFullName] = useState(customer?.fullName ?? '');
   const [email, setEmail] = useState(customer?.email ?? '');
   const [gender, setGender] = useState<Customer['gender']>(customer?.gender ?? 'unknown');
@@ -56,6 +59,7 @@ export function CustomerFormModal({ customer, onClose, onSaved }: Props) {
           station,
           giftSuggestion,
           giftBudget: giftBudget ? Number(giftBudget) : undefined,
+          year,
         });
       }
       onSaved();

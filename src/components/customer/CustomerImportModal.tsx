@@ -1,20 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { parseCustomerFile, type ImportResult } from '../../utils/excelImport';
 import { customerService } from '../../services/customer/customerService';
 
 interface Props {
+  year: number;
   onClose: () => void;
   onImported: () => void;
 }
 
-export function CustomerImportModal({ onClose, onImported }: Props) {
+export function CustomerImportModal({ year, onClose, onImported }: Props) {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [summary, setSummary] = useState<{ imported: number; updated: number; skipped: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [activeYear, setActiveYear] = useState<number | null>(null);
-
-  useEffect(() => { customerService.getActiveYear().then(setActiveYear); }, []);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -34,7 +32,7 @@ export function CustomerImportModal({ onClose, onImported }: Props) {
   async function handleConfirmImport() {
     if (!result) return;
     setBusy(true);
-    const res = await customerService.importRows(result.valid);
+    const res = await customerService.importRows(result.valid, year);
     setSummary(res);
     setBusy(false);
   }
@@ -45,11 +43,9 @@ export function CustomerImportModal({ onClose, onImported }: Props) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
       <div className="glass-panel" style={{ padding: 24, width: 640, maxHeight: '85vh', overflowY: 'auto' }}>
         <h2 style={{ marginTop: 0, color: 'var(--color-primary)' }}>Import Customers</h2>
-        {activeYear && (
-          <div style={{ background: 'rgba(255,193,7,0.15)', border: '1px solid rgba(255,193,7,0.4)', borderRadius: 10, padding: '8px 12px', marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
-            📅 Đang import vào danh sách năm <strong>{activeYear}</strong> (đổi năm trong Settings nếu cần).
-          </div>
-        )}
+        <div style={{ background: 'rgba(255,193,7,0.15)', border: '1px solid rgba(255,193,7,0.4)', borderRadius: 10, padding: '8px 12px', marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
+          📅 Đang import vào danh sách năm <strong>{year}</strong> (đổi năm bằng bộ lọc "Năm" ở trang Customers trước khi import nếu cần).
+        </div>
         {!summary && (
           <>
             <div style={{ background: 'rgba(20,126,147,0.06)', borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
