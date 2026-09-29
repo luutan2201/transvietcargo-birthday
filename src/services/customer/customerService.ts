@@ -71,6 +71,7 @@ export const customerService = {
     station: Station;
     giftSuggestion?: string;
     giftBudget?: number;
+    pic?: string;
     year?: number;
   }) {
     const year = input.year ?? currentRealYear();
@@ -93,6 +94,7 @@ export const customerService = {
       station: input.station,
       giftSuggestion: input.greetingType === 'gift_visit' ? input.giftSuggestion : undefined,
       giftBudget: input.greetingType === 'gift_visit' ? input.giftBudget : undefined,
+      pic: input.pic,
       ecardSent: false,
       giftGiven: false,
     });
@@ -129,6 +131,7 @@ export const customerService = {
           station: row.station ?? existing.station,
           giftSuggestion: greetingType === 'gift_visit' ? (row.giftSuggestion ?? existing.giftSuggestion) : undefined,
           giftBudget: greetingType === 'gift_visit' ? (row.giftBudget ?? existing.giftBudget) : undefined,
+          pic: row.pic ?? existing.pic,
         });
         results.updated++;
         continue;
@@ -150,6 +153,7 @@ export const customerService = {
         station: row.station ?? 'SGN',
         giftSuggestion: greetingType === 'gift_visit' ? row.giftSuggestion : undefined,
         giftBudget: greetingType === 'gift_visit' ? row.giftBudget : undefined,
+        pic: row.pic,
         ecardSent: false,
         giftGiven: false,
       });

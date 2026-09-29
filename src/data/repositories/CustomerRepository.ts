@@ -76,7 +76,7 @@ export class CustomerRepository {
   async search(term: string, year: number): Promise<Customer[]> {
     const q = term.trim();
     let query = supabase.from(TABLE).select('*').is('deleted_at', null).eq('year', year);
-    if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,company.ilike.%${q}%`);
+    if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,company.ilike.%${q}%,pic.ilike.%${q}%`);
     const { data, error } = await query;
     if (error) throw new RepositoryError('Failed to search customers', error);
     return (data as CustomerRow[]).map(customerFromRow);

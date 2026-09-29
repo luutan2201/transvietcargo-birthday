@@ -22,6 +22,7 @@ export interface CustomerRow {
   station: Station;
   gift_suggestion: string | null;
   gift_budget: number | null;
+  pic: string | null;
   ecard_sent: boolean;
   gift_given: boolean;
   notes: string | null;
@@ -49,6 +50,7 @@ export function customerFromRow(r: CustomerRow): Customer {
     station: r.station,
     giftSuggestion: r.gift_suggestion ?? undefined,
     giftBudget: r.gift_budget ?? undefined,
+    pic: r.pic ?? undefined,
     ecardSent: r.ecard_sent,
     giftGiven: r.gift_given,
     notes: r.notes ?? undefined,
@@ -76,6 +78,7 @@ export function customerToRow(c: Partial<Customer>): Partial<CustomerRow> {
   if (c.station !== undefined) row.station = c.station;
   if (c.giftSuggestion !== undefined) row.gift_suggestion = c.giftSuggestion ?? null;
   if (c.giftBudget !== undefined) row.gift_budget = c.giftBudget ?? null;
+  if (c.pic !== undefined) row.pic = c.pic ?? null;
   if (c.ecardSent !== undefined) row.ecard_sent = c.ecardSent;
   if (c.giftGiven !== undefined) row.gift_given = c.giftGiven;
   if (c.notes !== undefined) row.notes = c.notes ?? null;

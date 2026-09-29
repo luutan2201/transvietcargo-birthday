@@ -12,6 +12,7 @@ export interface ImportRow {
   greetingType?: GreetingType;
   giftSuggestion?: string;
   giftBudget?: number;
+  pic?: string;
   /** Raw, unparsed Birthday cell value — kept for the import preview so
    * users can see exactly what was in the source cell vs. what was parsed. */
   rawBirthday?: string;
@@ -33,6 +34,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   greetingType: ['type', 'greeting type', 'loại', 'loai', 'loại chúc mừng'],
   giftSuggestion: ['gift suggestion', 'gift', 'gợi ý quà', 'goi y qua'],
   giftBudget: ['budget', 'ngân sách', 'ngan sach'],
+  pic: ['pic', 'sales', 'sale phụ trách', 'sale phu trach', 'nhân viên sale', 'nhan vien sale'],
 };
 
 function normalizeHeader(h: string): string {
@@ -168,6 +170,7 @@ export async function parseCustomerFile(file: File): Promise<ImportResult> {
       greetingType: mapGreetingType(normalized.greetingType),
       giftSuggestion: normalized.giftSuggestion ? String(normalized.giftSuggestion) : undefined,
       giftBudget: parseBudget(normalized.giftBudget),
+      pic: normalized.pic ? String(normalized.pic) : undefined,
       rawBirthday: normalized.birthDate !== undefined && normalized.birthDate !== '' ? String(normalized.birthDate) : undefined,
     });
   });

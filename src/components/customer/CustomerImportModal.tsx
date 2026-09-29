@@ -50,7 +50,7 @@ export function CustomerImportModal({ year, onClose, onImported }: Props) {
           <>
             <div style={{ background: 'rgba(20,126,147,0.06)', borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
               <p style={{ marginBottom: 6, fontWeight: 600, color: 'var(--text-main)' }}>Cột được hỗ trợ (không phân biệt hoa/thường, thứ tự tuỳ ý):</p>
-              <p>Full Name, Email, Gender, Company, Position, Birthday, Station (SGN/DAD/HAN), Type (eCard only / Gift visit), Gift suggestion.</p>
+              <p>Full Name, Email, Gender, Company, Position, Birthday, Station (SGN/DAD/HAN), Type (eCard only / Gift visit), Gift suggestion, Budget, PIC.</p>
             </div>
             <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} disabled={busy} />
             {fileError && <p style={{ color: 'var(--color-danger)', fontSize: 15 }}>{fileError}</p>}

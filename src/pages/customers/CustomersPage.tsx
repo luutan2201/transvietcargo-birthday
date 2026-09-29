@@ -151,7 +151,7 @@ export default function CustomersPage() {
             ))}
           </select>
           <input
-            placeholder="Search by name, email, company…"
+            placeholder="Search by name, email, company, PIC…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: 260, padding: 10, borderRadius: 10, border: '1px solid #d0d7e2' }}
@@ -182,16 +182,17 @@ export default function CustomersPage() {
       <div className="glass-panel" style={{ padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15, tableLayout: 'fixed' }}>
           <colgroup>
-            <col style={{ width: '9%' }} />
-            <col style={{ width: '11%' }} />
-            <col style={{ width: '5%' }} />
-            <col style={{ width: '9%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '6%' }} />
-            <col style={{ width: '5%' }} />
             <col style={{ width: '8%' }} />
             <col style={{ width: '10%' }} />
-            <col style={{ width: '6%' }} />
+            <col style={{ width: '4%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '7%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '5%' }} />
+            <col style={{ width: '8%' }} />
             <col style={{ width: '5%' }} />
             <col style={{ width: '4%' }} />
             <col style={{ width: '4%' }} />
@@ -209,6 +210,7 @@ export default function CustomersPage() {
               <th style={th}>Type</th>
               <th style={th}>Gift suggestion</th>
               <th style={th}>Budget</th>
+              <th style={th}>PIC</th>
               <th style={{ ...th, textAlign: 'center' }}>Ảnh</th>
               <th style={{ ...th, textAlign: 'center' }}>eCard</th>
               <th style={{ ...th, textAlign: 'center' }}>Gift</th>
@@ -217,9 +219,9 @@ export default function CustomersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td style={td} colSpan={14}>Loading…</td></tr>
+              <tr><td style={td} colSpan={15}>Loading…</td></tr>
             ) : customers.length === 0 ? (
-              <tr><td style={td} colSpan={14}>No customers found.</td></tr>
+              <tr><td style={td} colSpan={15}>No customers found.</td></tr>
             ) : (
               customers.map((c) => (
                 <tr
@@ -241,6 +243,7 @@ export default function CustomersPage() {
                     {c.greetingType === 'gift_visit' ? (c.giftSuggestion || '—') : ''}
                   </td>
                   <td style={ellipsisTd}>{c.greetingType === 'gift_visit' ? formatMoney(c.giftBudget) : ''}</td>
+                  <td style={ellipsisTd} title={c.pic}>{c.pic || '—'}</td>
                   <td style={{ ...td, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                     {c.greetingType === 'gift_visit' ? (
                       <button onClick={() => setViewingGiftPhotos(c)} style={eyeButtonStyle} title="Xem/upload ảnh quà tặng">👁</button>

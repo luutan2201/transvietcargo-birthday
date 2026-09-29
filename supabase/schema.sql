@@ -46,6 +46,7 @@ create table if not exists public.customers (
   station text not null default 'SGN' check (station in ('SGN','DAD','HAN')),
   gift_suggestion text,
   gift_budget numeric,
+  pic text,
   ecard_sent boolean not null default false,
   gift_given boolean not null default false,
   notes text,

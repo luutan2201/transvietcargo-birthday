@@ -17,6 +17,7 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
   const [gender, setGender] = useState<Customer['gender']>(customer?.gender ?? 'unknown');
   const [company, setCompany] = useState(customer?.company ?? '');
   const [position, setPosition] = useState(customer?.position ?? '');
+  const [pic, setPic] = useState(customer?.pic ?? '');
   const [birthDate, setBirthDate] = useState(customer?.birthDate ?? '');
   const [greetingType, setGreetingType] = useState<GreetingType>(customer?.greetingType ?? 'ecard_only');
   const [station, setStation] = useState<Station>(customer?.station ?? 'SGN');
@@ -44,6 +45,7 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
           station,
           giftSuggestion: greetingType === 'gift_visit' ? giftSuggestion : undefined,
           giftBudget: greetingType === 'gift_visit' && giftBudget ? Number(giftBudget) : undefined,
+          pic: pic || undefined,
           ecardSent,
           giftGiven: greetingType === 'gift_visit' ? giftGiven : false,
         });
@@ -59,6 +61,7 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
           station,
           giftSuggestion,
           giftBudget: giftBudget ? Number(giftBudget) : undefined,
+          pic: pic || undefined,
           year,
         });
       }
@@ -89,6 +92,7 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
           </Field>
           <Field label="Company"><input value={company} onChange={(e) => setCompany(e.target.value)} style={inputStyle} /></Field>
           <Field label="Position"><input value={position} onChange={(e) => setPosition(e.target.value)} style={inputStyle} /></Field>
+          <Field label="PIC (Sales phụ trách)"><input value={pic} onChange={(e) => setPic(e.target.value)} placeholder="Tên nhân sự Sales phụ trách khách này" style={inputStyle} /></Field>
 
           <Field label="Station">
             <select value={station} onChange={(e) => setStation(e.target.value as Station)} style={inputStyle}>
