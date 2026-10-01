@@ -54,8 +54,8 @@ export default function GuidelinePage() {
         <h3 style={h3Style}>3. Quy định khi soạn email</h3>
         <table style={tableStyle}>
           <tbody>
-            <tr><td style={tdLabel}>Người gửi / From</td><td style={tdValue}><code style={codeStyle}>marketing.cargo@transviet.com</code></td></tr>
-            <tr><td style={tdLabel}>CC bắt buộc</td><td style={tdValue}><code style={codeStyle}>marketing.cargo@transviet.com</code>, <code style={codeStyle}>cargosales@transviet.com</code></td></tr>
+            <tr><td style={tdLabel}>Người gửi / From</td><td style={tdValue}><code style={codeStyle}>marketing@transvietcargo.com</code></td></tr>
+            <tr><td style={tdLabel}>CC bắt buộc</td><td style={tdValue}><code style={codeStyle}>marketing@transvietcargo.com</code>, <code style={codeStyle}>sales.sgn@transvietcargo.com</code> / <code style={codeStyle}>sales.dad@transvietcargo.com</code> / <code style={codeStyle}>sales.han@transvietcargo.com</code> (theo đúng station của khách)</td></tr>
             <tr><td style={tdLabel}>Subject</td><td style={tdValue}><code style={codeStyle}>[Happy Birthday to Ms./Mr. ___ | From TransViet Cargo]</code><br /><span style={{ fontSize: 13, color: 'var(--text-muted)' }}>(giữ nguyên format, chỉ thay danh xưng)</span></td></tr>
             <tr><td style={tdLabel}>Chữ ký</td><td style={tdValue}>Bắt buộc dùng <strong>chữ ký phòng ban</strong> (không dùng chữ ký cá nhân)</td></tr>
           </tbody>

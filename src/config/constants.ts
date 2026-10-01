@@ -50,5 +50,5 @@ export const APP_NAME = 'TransViet Cargo Email Campaign Studio';
  * (Quy Trình Handle Sinh Nhật Khách Hàng, mục III.3) — Sales has a
  * separate mailbox per station rather than one shared address. */
 export function getEmailCcForStation(station: 'SGN' | 'DAD' | 'HAN'): string[] {
-  return ['marketing.cargo@transviet.com', `cargosales.${station.toLowerCase()}@transviet.com`];
+  return ['marketing@transvietcargo.com', `sales.${station.toLowerCase()}@transvietcargo.com`];
 }
