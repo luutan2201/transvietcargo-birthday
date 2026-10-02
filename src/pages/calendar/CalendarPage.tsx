@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Customer, Station } from '../../types/entities';
 import { customerService } from '../../services/customer/customerService';
@@ -9,8 +9,8 @@ const MONTH_NAMES = [
 ];
 const WEEKDAY_LABELS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 
-const ECARD_COLOR = '#4CAF50';
-const GIFT_COLOR = '#2563EB';
+const ECARD_COLOR = '#F5A623';
+const GIFT_COLOR = '#E53E3E';
 
 type StationFilter = 'ALL' | Station;
 
@@ -58,22 +58,22 @@ export default function CalendarPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 10 }}>
         <div>
-          <h1 style={{ marginBottom: 6 }}>{MONTH_NAMES[month - 1]} {year}</h1>
+          <h1 style={{ marginBottom: 6, fontSize: 30, fontWeight: 800 }}>{MONTH_NAMES[month - 1]} {year}</h1>
           <p style={{ fontSize: 15, color: '#1A1A1A', fontWeight: 500 }}>
             Nếu sinh nhật rơi vào thứ 7 hoặc Chủ Nhật, Admin sẽ gửi quà vào thứ 6 trước đó
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={goPrev} style={navBtn}>◀</button>
-          <button onClick={goToday} style={{ ...navBtn, width: 'auto', padding: '0 12px' }}>Hôm nay</button>
+          <button onClick={goToday} style={{ ...navBtn, width: 'auto', padding: '0 16px', background: 'var(--color-primary)', color: '#fff', border: 'none' }}>Hôm nay</button>
           <button onClick={goNext} style={navBtn}>▶</button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 15, fontWeight: 600 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Dot color={ECARD_COLOR} size={12} /> eCard only</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Dot color={GIFT_COLOR} size={12} /> Gift visit</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28, fontSize: 18, fontWeight: 700 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Dot color={ECARD_COLOR} size={20} /> eCard only</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Dot color={GIFT_COLOR} size={20} /> Gift visit</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginRight: 4 }}>Station:</span>
@@ -89,7 +89,7 @@ export default function CalendarPage() {
           <thead>
             <tr>
               {WEEKDAY_LABELS.map((w) => (
-                <th key={w} style={{ padding: '8px 6px', fontSize: 13, fontWeight: 700, color: 'var(--color-primary)', textAlign: 'left' }}>{w}</th>
+                <th key={w} style={{ padding: '10px 6px', fontSize: 17, fontWeight: 800, color: 'var(--color-primary)', textAlign: 'center' }}>{w}</th>
               ))}
             </tr>
           </thead>
@@ -97,26 +97,19 @@ export default function CalendarPage() {
             {weeks.map((week, wi) => (
               <tr key={wi}>
                 {week.map((day, di) => (
-                  <td key={di} style={{ verticalAlign: 'top', border: '1px solid rgba(20,126,147,0.10)', padding: 6, height: 128, background: day && isToday(year, month, day) ? 'rgba(20,126,147,0.06)' : 'transparent' }}>
+                  <td key={di} style={{ verticalAlign: 'top', border: '1px solid rgba(20,126,147,0.10)', padding: 8, height: 190, background: day && isToday(year, month, day) ? 'rgba(20,126,147,0.06)' : 'transparent' }}>
                     {day && (
                       <>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>{day}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 92, overflowY: 'auto' }}>
+                        <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 8, textAlign: 'center' }}>{day}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, maxHeight: 158, overflowY: 'auto' }}>
                           {(byDay.get(day) ?? []).map((c) => (
-                            <div
+                            <CustomerChip
                               key={c.id}
-                              title={`${c.fullName} — ${c.company ?? ''} (${c.station}) — bấm để xem chi tiết`}
+                              customer={c}
+                              color={c.greetingType === 'gift_visit' ? GIFT_COLOR : ECARD_COLOR}
+                              showStation={stationFilter === 'ALL'}
                               onClick={() => navigate(`/customers?customerId=${c.id}`)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 14, fontWeight: 500, background: '#fff', borderRadius: 8, padding: '5px 7px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
-                              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(20,126,147,0.10)')}
-                              onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
-                            >
-                              <Dot color={c.greetingType === 'gift_visit' ? GIFT_COLOR : ECARD_COLOR} />
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {c.fullName}{c.company ? ` | ${c.company}` : ''}
-                                {stationFilter === 'ALL' && <span style={{ color: 'var(--text-muted)' }}> · {c.station}</span>}
-                              </span>
-                            </div>
+                            />
                           ))}
                         </div>
                       </>
@@ -128,6 +121,53 @@ export default function CalendarPage() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+interface CustomerChipProps {
+  customer: Customer;
+  color: string;
+  showStation: boolean;
+  onClick: () => void;
+}
+
+/** Two-line card: the customer's name on its own centered line (shrinking
+ * its own font if needed so it never wraps or overflows), with
+ * company/station on a smaller muted line underneath. */
+function CustomerChip({ customer, color, showStation, onClick }: CustomerChipProps) {
+  const nameRef = useRef<HTMLDivElement>(null);
+  const [hovered, setHovered] = useState(false);
+  const meta = [customer.company, showStation ? customer.station : undefined].filter(Boolean).join(' · ');
+
+  useLayoutEffect(() => {
+    const el = nameRef.current;
+    if (!el) return;
+    let size = 14.5;
+    el.style.fontSize = `${size}px`;
+    while (el.scrollWidth > el.clientWidth && size > 10.5) {
+      size -= 0.5;
+      el.style.fontSize = `${size}px`;
+    }
+  }, [customer.fullName]);
+
+  return (
+    <div
+      title={`${customer.fullName} — ${customer.company ?? ''} (${customer.station}) — bấm để xem chi tiết`}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+        background: hovered ? 'rgba(20,126,147,0.10)' : '#fff', borderRadius: 12, padding: '9px 8px',
+        width: '100%', textAlign: 'center', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+      }}
+    >
+      <div ref={nameRef} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 600, letterSpacing: '-0.3px', lineHeight: 1.25, whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden' }}>
+        <Dot color={color} size={14} />
+        <span>{customer.fullName}</span>
+      </div>
+      {meta && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', lineHeight: 1.25 }}>{meta}</div>}
     </div>
   );
 }
