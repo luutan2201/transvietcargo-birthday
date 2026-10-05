@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { Customer, GreetingType, Station } from '../../types/entities';
 import { customerService } from '../../services/customer/customerService';
+import { normalizeExternalUrl } from '../../utils/url';
 
 interface Props {
   customer?: Customer | null;
@@ -23,6 +24,7 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
   const [station, setStation] = useState<Station>(customer?.station ?? 'SGN');
   const [giftSuggestion, setGiftSuggestion] = useState(customer?.giftSuggestion ?? '');
   const [giftBudget, setGiftBudget] = useState(customer?.giftBudget !== undefined ? String(customer.giftBudget) : '');
+  const [giftLink, setGiftLink] = useState(customer?.giftLink ?? '');
   const [ecardSent, setEcardSent] = useState(customer?.ecardSent ?? false);
   const [giftGiven, setGiftGiven] = useState(customer?.giftGiven ?? false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,16 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // Validate the gift link up front so a typo is caught here instead of
+    // being saved as a dead/unsafe link.
+    const typedLink = giftLink.trim();
+    const safeLink = greetingType === 'gift_visit' ? normalizeExternalUrl(typedLink) : undefined;
+    if (greetingType === 'gift_visit' && typedLink && !safeLink) {
+      setError('Link món quà không hợp lệ — hãy dán đường dẫn đầy đủ, ví dụ https://shopee.vn/...');
+      return;
+    }
+
     setSaving(true);
     try {
       if (customer) {
@@ -45,7 +57,8 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
           station,
           giftSuggestion: greetingType === 'gift_visit' ? giftSuggestion : undefined,
           giftBudget: greetingType === 'gift_visit' && giftBudget ? Number(giftBudget) : undefined,
-          pic: pic || undefined,
+          giftLink: greetingType === 'gift_visit' ? (safeLink ?? '') : undefined,
+          pic: pic.trim(),
           ecardSent,
           giftGiven: greetingType === 'gift_visit' ? giftGiven : false,
         });
@@ -61,7 +74,8 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
           station,
           giftSuggestion,
           giftBudget: giftBudget ? Number(giftBudget) : undefined,
-          pic: pic || undefined,
+          giftLink: safeLink,
+          pic: pic.trim() || undefined,
           year,
         });
       }
@@ -127,6 +141,14 @@ export function CustomerFormModal({ customer, year, onClose, onSaved }: Props) {
                   value={giftBudget}
                   onChange={(e) => setGiftBudget(e.target.value)}
                   placeholder="e.g. 500000"
+                  style={inputStyle}
+                />
+              </Field>
+              <Field label="Link món quà (đề xuất / dự định tặng)">
+                <input
+                  value={giftLink}
+                  onChange={(e) => setGiftLink(e.target.value)}
+                  placeholder="https://… (dán đường dẫn sản phẩm)"
                   style={inputStyle}
                 />
               </Field>

@@ -71,6 +71,7 @@ export const customerService = {
     station: Station;
     giftSuggestion?: string;
     giftBudget?: number;
+    giftLink?: string;
     pic?: string;
     year?: number;
   }) {
@@ -94,6 +95,7 @@ export const customerService = {
       station: input.station,
       giftSuggestion: input.greetingType === 'gift_visit' ? input.giftSuggestion : undefined,
       giftBudget: input.greetingType === 'gift_visit' ? input.giftBudget : undefined,
+      giftLink: input.greetingType === 'gift_visit' ? input.giftLink : undefined,
       pic: input.pic,
       ecardSent: false,
       giftGiven: false,
@@ -131,6 +133,7 @@ export const customerService = {
           station: row.station ?? existing.station,
           giftSuggestion: greetingType === 'gift_visit' ? (row.giftSuggestion ?? existing.giftSuggestion) : undefined,
           giftBudget: greetingType === 'gift_visit' ? (row.giftBudget ?? existing.giftBudget) : undefined,
+          giftLink: greetingType === 'gift_visit' ? (row.giftLink ?? existing.giftLink) : undefined,
           pic: row.pic ?? existing.pic,
         });
         results.updated++;
@@ -153,6 +156,7 @@ export const customerService = {
         station: row.station ?? 'SGN',
         giftSuggestion: greetingType === 'gift_visit' ? row.giftSuggestion : undefined,
         giftBudget: greetingType === 'gift_visit' ? row.giftBudget : undefined,
+        giftLink: greetingType === 'gift_visit' ? row.giftLink : undefined,
         pic: row.pic,
         ecardSent: false,
         giftGiven: false,

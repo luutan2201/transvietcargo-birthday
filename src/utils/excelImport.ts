@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { Customer, GreetingType, Station } from '../types/entities';
+import { normalizeExternalUrl } from './url';
 
 export interface ImportRow {
   fullName: string;
@@ -12,6 +13,7 @@ export interface ImportRow {
   greetingType?: GreetingType;
   giftSuggestion?: string;
   giftBudget?: number;
+  giftLink?: string;
   pic?: string;
   /** Raw, unparsed Birthday cell value — kept for the import preview so
    * users can see exactly what was in the source cell vs. what was parsed. */
@@ -34,6 +36,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
   greetingType: ['type', 'greeting type', 'loại', 'loai', 'loại chúc mừng'],
   giftSuggestion: ['gift suggestion', 'gift', 'gợi ý quà', 'goi y qua'],
   giftBudget: ['budget', 'ngân sách', 'ngan sach'],
+  giftLink: ['link', 'url', 'gift link', 'link quà', 'link qua', 'đường dẫn', 'duong dan'],
   pic: ['pic', 'sales', 'sale phụ trách', 'sale phu trach', 'nhân viên sale', 'nhan vien sale'],
 };
 
@@ -170,6 +173,7 @@ export async function parseCustomerFile(file: File): Promise<ImportResult> {
       greetingType: mapGreetingType(normalized.greetingType),
       giftSuggestion: normalized.giftSuggestion ? String(normalized.giftSuggestion) : undefined,
       giftBudget: parseBudget(normalized.giftBudget),
+      giftLink: normalizeExternalUrl(normalized.giftLink ? String(normalized.giftLink) : undefined),
       pic: normalized.pic ? String(normalized.pic) : undefined,
       rawBirthday: normalized.birthDate !== undefined && normalized.birthDate !== '' ? String(normalized.birthDate) : undefined,
     });

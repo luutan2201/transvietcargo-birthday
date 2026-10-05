@@ -5,6 +5,7 @@ import { customerService, currentRealYear } from '../../services/customer/custom
 import { CustomerFormModal } from '../../components/customer/CustomerFormModal';
 import { CustomerImportModal } from '../../components/customer/CustomerImportModal';
 import { GiftPhotoModal } from '../../components/customer/GiftPhotoModal';
+import { normalizeExternalUrl } from '../../utils/url';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../services/auth/permissions';
 
@@ -185,18 +186,19 @@ export default function CustomersPage() {
             <col style={{ width: '8%' }} />
             <col style={{ width: '10%' }} />
             <col style={{ width: '4%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '12%' }} />
+            <col style={{ width: '7%' }} />
+            <col style={{ width: '10%' }} />
             <col style={{ width: '5%' }} />
             <col style={{ width: '5%' }} />
             <col style={{ width: '7%' }} />
             <col style={{ width: '9%' }} />
             <col style={{ width: '5%' }} />
+            <col style={{ width: '4%' }} />
             <col style={{ width: '8%' }} />
             <col style={{ width: '5%' }} />
             <col style={{ width: '4%' }} />
             <col style={{ width: '4%' }} />
-            <col style={{ width: '6%' }} />
+            <col style={{ width: '5%' }} />
           </colgroup>
           <thead>
             <tr style={{ background: 'rgba(0,59,122,0.06)', textAlign: 'left' }}>
@@ -210,6 +212,7 @@ export default function CustomersPage() {
               <th style={th}>Type</th>
               <th style={th}>Gift suggestion</th>
               <th style={th}>Budget</th>
+              <th style={{ ...th, textAlign: 'center' }}>Link</th>
               <th style={th}>PIC</th>
               <th style={{ ...th, textAlign: 'center' }}>Ảnh</th>
               <th style={{ ...th, textAlign: 'center' }}>eCard</th>
@@ -219,9 +222,9 @@ export default function CustomersPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td style={td} colSpan={15}>Loading…</td></tr>
+              <tr><td style={td} colSpan={16}>Loading…</td></tr>
             ) : customers.length === 0 ? (
-              <tr><td style={td} colSpan={15}>No customers found.</td></tr>
+              <tr><td style={td} colSpan={16}>No customers found.</td></tr>
             ) : (
               customers.map((c) => (
                 <tr
@@ -243,6 +246,9 @@ export default function CustomersPage() {
                     {c.greetingType === 'gift_visit' ? (c.giftSuggestion || '—') : ''}
                   </td>
                   <td style={ellipsisTd}>{c.greetingType === 'gift_visit' ? formatMoney(c.giftBudget) : ''}</td>
+                  <td style={{ ...td, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                    {c.greetingType === 'gift_visit' ? <GiftLinkCell url={c.giftLink} /> : null}
+                  </td>
                   <td style={ellipsisTd} title={c.pic}>{c.pic || '—'}</td>
                   <td style={{ ...td, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                     {c.greetingType === 'gift_visit' ? (
@@ -305,6 +311,26 @@ function genderLabel(gender: Customer['gender']): string {
 }
 
 const STATION_COLORS: Record<Station, string> = { SGN: 'var(--color-secondary)', DAD: '#8E5FD9', HAN: 'var(--color-accent)' };
+
+/** Shows just the word "Link"; clicking opens the saved URL in a new tab.
+ * Re-validated here so a bad value in the database can never render as an
+ * unsafe link. The cell stops click propagation so opening a link doesn't
+ * also open the row's edit form. */
+function GiftLinkCell({ url }: { url?: string }) {
+  const href = normalizeExternalUrl(url);
+  if (!href) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={href}
+      style={{ color: 'var(--color-secondary)', fontWeight: 600, textDecoration: 'underline' }}
+    >
+      Link
+    </a>
+  );
+}
 
 function StationBadge({ station }: { station: Station }) {
   return <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 13, color: '#fff', background: STATION_COLORS[station] }}>{station}</span>;

@@ -46,6 +46,8 @@ export interface Customer extends BaseEntity {
   giftSuggestion?: string;
   /** Estimated/allocated budget for the gift, in the company's local currency. Only meaningful when greetingType === 'gift_visit'. */
   giftBudget?: number;
+  /** Web link to the gift being proposed/planned, so Admin and Sales can look at the same item. Only meaningful for gift_visit customers. */
+  giftLink?: string;
   /** Sales team member in charge of this customer — lets Admin coordinate
    * directly with the right person about gift matters. */
   pic?: string;

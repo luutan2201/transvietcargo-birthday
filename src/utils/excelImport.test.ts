@@ -66,3 +66,25 @@ describe('parseCustomerFile — mixed real-world birthday formats', () => {
     expect(result.valid[0].birthDate).toBe('1978-03-01');
   });
 });
+
+describe('parseCustomerFile — Link and PIC columns', () => {
+  it('keeps valid links (adding https:// if missing) and drops unsafe ones', async () => {
+    const csv = [
+      'Full Name,Email,Link,PIC',
+      'A,a@test.com,https://shopee.vn/item/1,Sale One',
+      'B,b@test.com,shopee.vn/item/2,',
+      'C,c@test.com,javascript:alert(1),',
+      'D,d@test.com,,',
+    ].join('\n');
+
+    const result = await parseCustomerFile(csvFile(csv));
+    expect(result.errors).toHaveLength(0);
+    expect(result.valid.map((r) => r.giftLink)).toEqual([
+      'https://shopee.vn/item/1',
+      'https://shopee.vn/item/2',
+      undefined,
+      undefined,
+    ]);
+    expect(result.valid[0].pic).toBe('Sale One');
+  });
+});
