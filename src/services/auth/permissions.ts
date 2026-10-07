@@ -5,7 +5,8 @@ export type Permission =
   | 'templates.view' | 'templates.edit'
   | 'email.generate' | 'card.generate'
   | 'history.view' | 'history.delete'
-  | 'settings.edit' | 'admin.access' | 'backup.manage';
+  | 'settings.edit' | 'admin.access' | 'backup.manage'
+  | 'tracking.manage';
 
 /**
  * admin  — full access to everything, including managing other accounts
@@ -23,12 +24,14 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'email.generate', 'card.generate',
     'history.view', 'history.delete',
     'settings.edit', 'admin.access', 'backup.manage',
+    'tracking.manage',
   ],
   manager: [
     'customers.view', 'customers.edit',
     'templates.view', 'templates.edit',
     'email.generate', 'card.generate',
     'history.view',
+    'tracking.manage',
   ],
   user: ['customers.view', 'templates.view', 'history.view'],
 };

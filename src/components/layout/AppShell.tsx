@@ -17,6 +17,10 @@ const NAV_ITEMS: Array<{ to: string; label: string; icon: string; permission?: P
   { to: '/guideline', label: 'Guideline', icon: '☑' },
 ];
 
+const TRACKING_ITEMS: typeof NAV_ITEMS = [
+  { to: '/tracking', label: 'Email Tracking', icon: '◔' },
+];
+
 const SYSTEM_ITEMS: Array<{ to: string; label: string; icon: string; permission?: Parameters<typeof hasPermission>[1] }> = [
   { to: '/settings', label: 'Settings', icon: '⚙', permission: 'settings.edit' },
   { to: '/admin', label: 'Admin', icon: '⛨', permission: 'admin.access' },
@@ -84,6 +88,16 @@ export function AppShell() {
                   {todaysPendingCount}
                 </span>
               )}
+            </NavLink>
+          ))}
+
+          <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.45)', padding: '18px 10px 8px' }}>
+            Theo dõi
+          </div>
+          {TRACKING_ITEMS.map((item) => (
+            <NavLink key={item.to} to={item.to} style={({ isActive }) => navLinkStyle(isActive)}>
+              <span style={{ width: 20, textAlign: 'center', fontSize: 17 }}>{item.icon}</span>
+              {item.label}
             </NavLink>
           ))}
 

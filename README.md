@@ -31,6 +31,9 @@ supabase functions deploy create-user
 ```
 (project-ref là đoạn ký tự sau `https://` trong Project URL, trước `.supabase.co`)
 
+## Email Tracking
+Mục riêng trong menu (dưới Guideline), tách biệt dữ liệu sinh nhật. Chạy `supabase/tracking.sql`.
+
 ## Chạy thử (local hoặc StackBlitz)
 ```
 npm install
