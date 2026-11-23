@@ -46,7 +46,7 @@ function normalizeHeader(h: string): string {
 
 /** Recognizes 3 input formats: M/F, Nam/Nữ, Male/Female (case-insensitive,
  * tolerant of stray whitespace/periods and Vietnamese diacritic variants). */
-function mapGender(raw: unknown): Customer['gender'] {
+export function mapGender(raw: unknown): Customer['gender'] {
   const v = String(raw ?? '')
     .normalize('NFC')
     .trim()
@@ -57,20 +57,20 @@ function mapGender(raw: unknown): Customer['gender'] {
   return 'unknown';
 }
 
-function mapStation(raw: unknown): Station | undefined {
+export function mapStation(raw: unknown): Station | undefined {
   const v = String(raw ?? '').trim().toUpperCase();
   if (v === 'SGN' || v === 'DAD' || v === 'HAN') return v;
   return undefined;
 }
 
-function parseBudget(raw: unknown): number | undefined {
+export function parseBudget(raw: unknown): number | undefined {
   if (raw === undefined || raw === null || raw === '') return undefined;
   const cleaned = String(raw).replace(/[^\d.,-]/g, '').replace(/,/g, '');
   const n = Number(cleaned);
   return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
-function mapGreetingType(raw: unknown): GreetingType | undefined {
+export function mapGreetingType(raw: unknown): GreetingType | undefined {
   const v = String(raw ?? '').trim().toLowerCase();
   if (['gift_visit', 'gift visit', 'gift', 'quà', 'qua'].includes(v)) return 'gift_visit';
   if (['ecard_only', 'ecard only', 'ecard', 'email only', 'email'].includes(v)) return 'ecard_only';
@@ -91,13 +91,16 @@ const VN_MONTH_PATTERN = /^(\d{1,2})[\s-]*(?:thg|tháng|th)\.?\s*(\d{1,2})$/i;
  * Excel serial numbers, Vietnamese abbreviated text ("14-thg 5" = 14 May),
  * and DD/MM or DD/MM/YYYY text. Year is a placeholder when absent — only
  * month/day drives the birthday-month filter, so an inexact year is fine. */
-function mapBirthDate(raw: unknown): string | undefined {
+export function mapBirthDate(raw: unknown): string | undefined {
   if (raw === undefined || raw === null || raw === '') return undefined;
 
   if (raw instanceof Date && !isNaN(raw.getTime())) {
-    const y = raw.getFullYear();
-    const m = String(raw.getMonth() + 1).padStart(2, '0');
-    const d = String(raw.getDate()).padStart(2, '0');
+    // Thư viện đọc Excel đôi khi trả ngày lệch vài giây so với 0h (ví dụ 23:59:50 hôm trước).
+    // Cộng 12 giờ rồi mới lấy ngày để luôn ra đúng ngày trong ô.
+    const noon = new Date(raw.getTime() + 12 * 3600 * 1000);
+    const y = noon.getFullYear();
+    const m = String(noon.getMonth() + 1).padStart(2, '0');
+    const d = String(noon.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
 

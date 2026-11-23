@@ -5,6 +5,8 @@ import { customerService, currentRealYear } from '../../services/customer/custom
 import { CustomerFormModal } from '../../components/customer/CustomerFormModal';
 import { CustomerImportModal } from '../../components/customer/CustomerImportModal';
 import { GiftPhotoModal } from '../../components/customer/GiftPhotoModal';
+import { ExportYearModal } from '../../components/customer/ExportYearModal';
+import { NextYearModal } from '../../components/customer/NextYearModal';
 import { normalizeExternalUrl } from '../../utils/url';
 import { useAuth } from '../../hooks/useAuth';
 import { hasPermission } from '../../services/auth/permissions';
@@ -47,6 +49,8 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Customer | null | undefined>(undefined);
   const [showImport, setShowImport] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [showNextYear, setShowNextYear] = useState(false);
   const [viewingGiftPhotos, setViewingGiftPhotos] = useState<Customer | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(currentRealYear());
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -127,6 +131,8 @@ export default function CustomersPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Customers <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-muted)' }}>— Danh sách năm {selectedYear}</span></h1>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setShowExport(true)} style={secondaryButtonStyle} title="Xuất báo cáo rà soát cuối năm (chọn năm)">Export báo cáo</button>
+          {canEdit && <button onClick={() => setShowNextYear(true)} style={secondaryButtonStyle} title={`Tạo danh sách năm ${selectedYear + 1} từ danh sách năm ${selectedYear}`}>＋ Tạo danh sách {selectedYear + 1}</button>}
           {canEdit && <button onClick={() => setShowImport(true)} style={secondaryButtonStyle}>Import Excel</button>}
           {canEdit && <button onClick={() => setEditing(null)} style={primaryButtonStyle}>+ New Customer</button>}
         </div>
@@ -290,6 +296,20 @@ export default function CustomersPage() {
           year={selectedYear}
           onClose={() => setShowImport(false)}
           onImported={() => { setShowImport(false); reload(); customerService.listYears().then(setAvailableYears); }}
+        />
+      )}
+      {showExport && (
+        <ExportYearModal years={availableYears} defaultYear={selectedYear} onClose={() => setShowExport(false)} />
+      )}
+      {showNextYear && (
+        <NextYearModal
+          fromYear={selectedYear}
+          targetHasData={availableYears.includes(selectedYear + 1)}
+          onClose={() => setShowNextYear(false)}
+          onDone={(targetYear) => {
+            setShowNextYear(false);
+            customerService.listYears().then((years) => { setAvailableYears(years); setSelectedYear(targetYear); });
+          }}
         />
       )}
       {viewingGiftPhotos && (

@@ -3,6 +3,8 @@ import { giftPhotoRepository } from '../../data/repositories/GiftPhotoRepository
 import type { Customer, GreetingType, Station } from '../../types/entities';
 import { ValidationError } from '../../data/errors';
 import { createLogger } from '../../utils/logger';
+import type { ImportRow } from '../../utils/excelImport';
+import { customerToImportRow, fillFromPrevious, greetingFromDecision, type ReviewImportRow } from '../../utils/yearReview';
 
 const logger = createLogger('CustomerService');
 
@@ -165,5 +167,45 @@ export const customerService = {
     }
     logger.info('Import finished', { year, ...results });
     return results;
+  },
+
+  /**
+   * Tạo danh sách năm `fromYear + 1`.
+   * - mode "copy": sao chép toàn bộ danh sách năm trước (đặt lại trạng thái đã gửi / đã tặng).
+   * - mode "file": nhập từ file (file rà soát đã chốt hoặc file thường); ô còn trống được tự điền
+   *   từ danh sách năm trước (khớp theo email). Dòng có quyết định CHỐT "Không gửi" bị loại.
+   */
+  async createNextYearList(opts: { fromYear: number; mode: 'copy' | 'file'; rows?: Array<ImportRow | ReviewImportRow> }) {
+    const targetYear = opts.fromYear + 1;
+    const { items: previous } = await customerRepository.getAll({ year: opts.fromYear, pageSize: 10000 });
+    const byEmail = new Map(previous.map((c) => [c.email.trim().toLowerCase(), c]));
+
+    let incoming: ImportRow[];
+    let excluded = 0;
+    let undecided = 0;
+    let filled = 0;
+
+    if (opts.mode === 'copy') {
+      incoming = previous.map(customerToImportRow);
+    } else {
+      incoming = [];
+      for (const raw of opts.rows ?? []) {
+        let row: ImportRow = raw;
+        const review = raw as Partial<ReviewImportRow>;
+        if (review.decision) {
+          const type = greetingFromDecision(review.decision, review.sheetKind ?? 'gift');
+          if (review.decision === 'undecided') undecided++;
+          if (type === null) { excluded++; continue; }
+          row = { ...raw, greetingType: type };
+        }
+        const f = fillFromPrevious(row, byEmail.get(row.email.trim().toLowerCase()));
+        if (f.filled > 0) filled++;
+        incoming.push(f.row);
+      }
+    }
+
+    const res = await customerService.importRows(incoming, targetYear);
+    logger.info('Next-year list created', { fromYear: opts.fromYear, targetYear, mode: opts.mode, ...res, excluded, undecided, filled });
+    return { targetYear, ...res, excluded, undecided, filled };
   },
 };
