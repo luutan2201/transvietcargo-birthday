@@ -125,6 +125,12 @@ export default function CalendarPage() {
   );
 }
 
+/** Short display name for the calendar: the last two words (middle + given name). */
+function shortName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  return parts.length <= 2 ? parts.join(' ') : parts.slice(-2).join(' ');
+}
+
 interface CustomerChipProps {
   customer: Customer;
   color: string;
@@ -165,7 +171,7 @@ function CustomerChip({ customer, color, showStation, onClick }: CustomerChipPro
     >
       <div ref={nameRef} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 600, letterSpacing: '-0.3px', lineHeight: 1.25, whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden' }}>
         <Dot color={color} size={14} />
-        <span>{customer.fullName}</span>
+        <span>{shortName(customer.fullName)}</span>
       </div>
       {meta && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', lineHeight: 1.25 }}>{meta}</div>}
     </div>
