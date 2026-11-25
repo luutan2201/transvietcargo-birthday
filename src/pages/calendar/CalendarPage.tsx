@@ -97,11 +97,11 @@ export default function CalendarPage() {
             {weeks.map((week, wi) => (
               <tr key={wi}>
                 {week.map((day, di) => (
-                  <td key={di} style={{ verticalAlign: 'top', border: '1px solid rgba(20,126,147,0.10)', padding: 8, height: 190, background: day && isToday(year, month, day) ? 'rgba(20,126,147,0.06)' : 'transparent' }}>
+                  <td key={di} style={{ verticalAlign: 'top', border: '1px solid rgba(20,126,147,0.10)', padding: 8, height: 150, background: day && isToday(year, month, day) ? 'rgba(20,126,147,0.06)' : 'transparent' }}>
                     {day && (
                       <>
                         <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 8, textAlign: 'center' }}>{day}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, maxHeight: 158, overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
                           {(byDay.get(day) ?? []).map((c) => (
                             <CustomerChip
                               key={c.id}
